@@ -5,7 +5,7 @@ module Simulation
 
 	def start_simulation
 		# Initialize simulation with critters
-		init_number_critter(10)	
+		init_simulation(1)	
 		
 		# Start simulation loop
 		@timer = NSTimer.scheduledTimerWithTimeInterval SimulationData::TIME_INCREMENT, 
@@ -15,16 +15,19 @@ module Simulation
 			repeats: true
 	end
 
-	def init_number_critter(num)
-		food0 = Food.new(456,378,50,50)	
-		food1 = Food.new(324,876,50,50)	
-		add_subLayer(food0)
-		add_subLayer(food1)
+	def init_simulation(num)
+		food0 = Food.new(456,378,35,35)
+		food1 = Food.new(324,876,35,35)
+		food2 = Food.new(678,400,35,35)
+
+		add_food_item(food0)
+		add_food_item(food1)
+		add_food_item(food2)	
 
 		num.times do
 			critter = Critter.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),25,25)
 			critter.add_observer self
-			add_subLayer(critter)
+			add_critter(critter)
 		end
 	end
 
@@ -32,47 +35,19 @@ module Simulation
 		all_layers.each { |layer| layer.update }
 	end
 
-	def add_subLayer(item)
-		new_layer = ImageLayer.alloc.initWithItem(item)
-		all_layers << new_layer
-		@background_layer.addSublayer(new_layer)	
-		new_layer
-	end	
-	
-	def remove_subLayer(item=nil)
-		# Remove any dead critters or depleted foods		
-	end
-
-
+	# Listener for Critter issued events
 	def update(critter,type)
 		case type
 		when :dead
-			p "Critter has died"
+			remove_critter critter
 		when :born
-			p "Critter is born"
+			add_critter critter
 		when :ask_for_help
 			p "Critter asks for help"
+		when :eating
+			p "Critter is eating"
 		else
 			p "What the hell case is this?"
 		end
 	end
 end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

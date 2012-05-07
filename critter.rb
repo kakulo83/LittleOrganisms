@@ -1,9 +1,11 @@
 require 'simulation_item'
+require 'simulation_data'
 require 'observer'
 
 class Critter < SimulationItem
 	include Observable
-	
+	include SimulationData
+
 	attr_reader :x, :y, :width, :height, :angle, :energy, :traits
 
 	def initialize(x, y, width, height, parent=nil)
@@ -26,7 +28,7 @@ class Critter < SimulationItem
 
 	def standard_traits 
 		@image_name = "graphics/critter.png"
-		@energy = 50 
+		@energy = 500 
 		@traits[:total_energy] = 500
 		@traits[:fat] = 20
 		@isAlive = true

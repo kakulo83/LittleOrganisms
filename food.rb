@@ -9,7 +9,7 @@ class Food < SimulationItem
 		@y = y
 		@width = width
 		@height = height
-		@image_name = "graphics/food.png"
+		@image_name = "graphics/hoop_food.png"
 	end
 
 	def update

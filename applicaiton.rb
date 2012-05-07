@@ -1,7 +1,6 @@
 framework 'Cocoa'
 require 'critter'
 require 'food'
-require 'json'
 require 'simulation'
 require 'simulation_data'
 require 'image_layer'
