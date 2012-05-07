@@ -1,66 +1,78 @@
-framework 'Cocoa'
-require 'critter'
-require 'environment'
-require 'food'
-require 'gui'
-require 'json'
 require 'simulation_data'
 
+module Simulation
+	include SimulationData 
 
-class Simulation
-
-	include SimulationData
-
-	attr_reader :sim, :window, :frame, :gui, :data
-
-	def applicationDidFinishLaunching(notification)
-		#start
-	end
-	
-	def initialize
-		# Create Simulation Objects
-		@grid = Array.new(SIMULATION_WIDTH)
-		@grid.map! { Array.new(SIMULATION_HEIGHT) } 
-		@critter = Critter.new(@grid)	
-
-		# Create Application	
-		@sim = NSApplication.sharedApplication
-		@sim.activationPolicy = NSApplicationActivationPolicyRegular
-		@sim.activateIgnoringOtherApps(true)	
-		@sim.delegate = self
-
-		# Create Window
-		@frame  = [0.0, 0.0, SIMULATION_WIDTH, SIMULATION_HEIGHT]	
-		@window = NSWindow.alloc.initWithContentRect(frame,	styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask, backing:NSBackingStoreBuffered, defer:false)
-		@window.delegate = self
-		@window.title = "Unintelligent Design"
-
-		# Create GUI
-		@gui = GUI.alloc.initWithFrame(@frame,self)
-		@window.contentView = @gui
-
-		@window.center
-		@window.display
-		@window.makeKeyAndOrderFront(nil)
-		@window.orderFrontRegardless
-		@sim.run
-	end
-
-	def start
+	def start_simulation
+		# Initialize simulation with critters
+		init_number_critter(10)	
+		
+		# Start simulation loop
 		@timer = NSTimer.scheduledTimerWithTimeInterval SimulationData::TIME_INCREMENT, 
 			target: self, 
-			selector: 'update', 
+			selector: 'refresh', 
 			userInfo: nil, 
 			repeats: true
 	end
 
-	def update 
-		@critter.update
-		# critters.update
-		# food.update
-		# environment.update 
-		# mechanisms.update
+	def init_number_critter(num)
+		food0 = Food.new(456,378,50,50)	
+		food1 = Food.new(324,876,50,50)	
+		add_subLayer(food0)
+		add_subLayer(food1)
+
+		num.times do
+			critter = Critter.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),25,25)
+			critter.add_observer self
+			add_subLayer(critter)
+		end
+	end
+
+	def refresh 
+		all_layers.each { |layer| layer.update }
+	end
+
+	def add_subLayer(item)
+		new_layer = ImageLayer.alloc.initWithItem(item)
+		all_layers << new_layer
+		@background_layer.addSublayer(new_layer)	
+		new_layer
+	end	
+	
+	def remove_subLayer(item=nil)
+		# Remove any dead critters or depleted foods		
+	end
+
+
+	def update(critter,type)
+		case type
+		when :dead
+			p "Critter has died"
+		when :born
+			p "Critter is born"
+		when :ask_for_help
+			p "Critter asks for help"
+		else
+			p "What the hell case is this?"
+		end
 	end
 end
 
-sim = Simulation.new
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
