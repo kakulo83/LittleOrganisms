@@ -25,7 +25,7 @@ module Simulation
 		add_food_item(food2)	
 
 		num.times do
-			critter = Critter.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),25,25)
+			critter = Critter.new(300,800,25,25,self)
 			critter.add_observer self
 			add_critter(critter)
 		end

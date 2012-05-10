@@ -7,18 +7,27 @@ module SimulationData
 	GRID_RESOLUTION = 10
 	TIME_INCREMENT = 0.2
 	MAX_POPULATION = 100
+	INTERACTION_RANGE = 15	# The min distance two things have to be to interact w/each other
 
 	def all_layers
 		@all_layers ||= []	
 	end
 
+	def all_critters
+		@all_critters ||= []	
+	end
+
+	def all_food_items
+		@all_foods ||= []	
+	end
+
 	def add_subLayer(item)
 		# Sync Critter array	
-		case item.class
+		case item
 		when Critter
-			@all_critters << item
+			all_critters << item
 		when Food
-			@all_foods << item
+			all_food_items << item
 		end
 		# Add to all_layers	
 		new_layer = ImageLayer.alloc.initWithItem(item)
@@ -36,24 +45,20 @@ module SimulationData
 		end
 	end
 
-	def all_critters
-		@all_critters ||= []	
-	end
-
 	def add_critter(critter)
 		add_subLayer(critter)		
+	end
+
+	def add_food_item(food)
+		add_subLayer(food)
 	end
 
 	def remove_critter(critter)
 		remove_subLayer(critter)
 	end
 
-	def all_food_items
-		@all_foods ||= []	
-	end
-
-	def add_food_item(food)
-		add_subLayer(food)
+	def remove_food(food)
+		remove_subLayer(food)
 	end
 
 	def number_of_critters
