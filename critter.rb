@@ -15,13 +15,18 @@ class Critter < SimulationItem
 		@height = height	
 		@image_name = "graphics/critter.png"
 		@simulation = simulation	
-		@step_size = 20 		
+		@step_size = 10.0 		
 		@traits = {}	
 		@is_alive = true
+		@age = 0	
 		@is_hungry = false	
 		@priorities = [:consume_food, :search_for_food, :reproduce, :idle, :give_help]
 		@purpose = :idle
-		
+		@purpose_is_new = false					# Used in tracking how long the current purpose has been executing	
+		@purpose_counter_start = 0				# Marks the start time for the new purpose
+		@purpose_counter = 0					# Counter for how many cycles the current purpose has been running
+		@search_direction = 0					# Used in the critter's search for food	
+		@food = nil								# Food item critter will attempt to consume
 		if parent
 			inherit_parent_traits(parent)
 		else
@@ -32,14 +37,15 @@ class Critter < SimulationItem
 	end
 
 	def standard_traits 
-		@traits[:energy_capacity] = 350			# The total amount of energy, not including fat, a critter can store
+		@traits[:energy_capacity] = 550			# The total amount of energy, not including fat, a critter can store
 		@traits[:energy_consumption_rate] = 1	# Rate of normal metabolic energy consumption
 		@traits[:fat] = 20						# Energy stored in excess of normal storage
 		@traits[:biological_clock] = 100 		# Minimum time between reproduction cycles
-		@traits[:hunger_point] = 340			# Threshold where critter becomes hungry for food energy
+		@traits[:hunger_point] = 530			# Threshold where critter becomes hungry for food 
 		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other purposes 
-	    @traits[:smell_range] = 200 			# Maximum detection range for smell 
+	    @traits[:smell_range] = 170 			# Maximum detection range for smell 
 		@traits[:smell_cost] = 2				# Energy cost to use smell ability
+		@traits[:stubborness] = 15				# Determines how long critter will search on a path before it chooses a new one
 #		@traits[:cooperation] = 0
 #		@traits[:aggressiveness] = 0
 #		@traits[:risk] = 0
@@ -51,15 +57,16 @@ class Critter < SimulationItem
 		express_traits
 	end
 
+# 	Mutate traits from parents 
+# 	@energy = parent.traits[:nurturing]
 	def inherit_parent_traits(parent)
-# 		Mutate traits from parents 
-# =>	@energy = parent.traits[:nurturing]
 		express_traits	
 	end
 
+# 	Increasing the smell_range should incur an energy cost
+# 	Modifying one trait should have an effect on other traits.
 	def trait_to_trait_relationships
-# =>	Increasing the smell_range should incur an energy cost
-# =>	Modifying one trait should have an effect on other traits.
+#   Don't know what to put here yet, if anything
 	end
 
 	def update
@@ -68,14 +75,22 @@ class Critter < SimulationItem
 		execute_purpose
 	end
 
+	# 'Express' the 'genes' through instance variables, so they can be easily used for logic/computation etc.
 	def express_traits
-		# 'Express' the 'genes' through instance variables, so they can be easily used for logic/computation etc.
 		@traits.keys.each do |trait|	
 			self.instance_variable_set("@#{trait}", @traits[trait])
 		end
 	end
 
 #===================================================== Internal Behavior ================================================
+
+	def update_internal_state 
+		if is_alive?	
+			@energy -= @energy_consumption_rate	
+			@age += 1 
+			if @biological_clock > 0 then @biological_clock -= 1 end	
+		end
+	end
 
 	def update_purpose
 	# 		Basic Decision Making Framework
@@ -101,27 +116,29 @@ class Critter < SimulationItem
 	#			3.  What if critter A becomes hungry before reaching B?  What if after giving energy it becomes hungry, does that factor
 	# 			  	into the decision to help B in the first place?
 
-	#		if is_starving?  
-	#			@purpose = :search_for_food
-	#		end 
+		old_purpose = @purpose
+	
+		if is_hungry? 
+			if old_purpose == :consume_food	
+				return	
+			else	
+				@purpose = :search_for_food
+				if @is_hungry == false	
+					@elapsed_time_without_finding_food = 0
+					@is_hungry = true
+				end
+			end
+		end
 
-	#		if is_hungry?
-	#		
-	#		end
-
-		if is_hungry?
-			@purpose = :search_for_food
+		if old_purpose != @purpose 
+			@purpose_is_new = true 
+			@purpose_counter_start, @purpose_counter = @lifespan, @lifespan
+		else 
+			@purpose_is_new = false 
+			@purpose_counter += 1	
 		end
 	end
 
-	def update_internal_state 
-		if is_alive?
-			# decrease energy	
-			@energy -= @energy_consumption_rate	
-			# decrement reproduction counter	
-			if @biological_clock > 0 then @biological_clock -= 1 end	
-		end
-	end
 
 	def execute_purpose
 		case @purpose 
@@ -141,47 +158,62 @@ class Critter < SimulationItem
 #===================================================== External Behaviors ================================================
 
 	def idle
-		# Add code to effectuate idling behavior:  arbitrary motion
 		move_idle	
 	end
 
+
+#	Randomly pick a target location and perform a smell sensor sweep along that path.
+#	If after n number of cycles no food is detected, randomly move in a new direction that is perpendicular to the current
+#	one and continue sensor sweep; just don't forget the beeps and the creeps and most importantly... don't get jammed!
+#   
+#   When the critter decides to start searching for food, it has to keep some sort of counter capturing how long it has been searching
+#   on its current path.  If the search has been unsuccessful for too long, it should switch to and search along a new path. 
 	def search_for_food
-		# Add code to effectuate movement and smelling that together are food searching behavior
-		# Smell at current location, if food is detected move towards it
-		# If no food is detected, initiate the search motion pattern whilst smelling for potential food
-		# If after travelling n steps no food is detected, change course arbitrarily +/- 90 degrees to a new course
-
-		# Randomly pick a target location and perform a smell sensor sweep along that path.
-		# If after n number of cycles no food is detected, randomly move in a new direction that is perpendicular to the current
-		# one and continue sensor sweep; just don't forget the beeps and the creeps and most importantly... don't get jammed!
-
-		food = smell
-		if food.size == 0
-			move_searching
-		else
+		detected_food = smell
+		if detected_food.size == 0
+			@elapsed_time_without_finding_food += 1			
+			# If the current search direction has been unsuccessful for too long try out a new direction;
+			# Oh yeah, do this for the critter as well good luck! :)
+	
+			if @elapsed_time_without_finding_food > @stubborness
+				# Move perpendicular left or right relative to the current search direction	
+				@elapsed_time_without_finding_food = 0	
+				@search_direction += (rand(2)-1) * Math::PI/2.0
+				move_fuzzily_towards(@search_direction)	
+			elsif @elapsed_time_without_finding_food == 1
+				# Pick a random new direction to start the adventure 
+				@search_direction = rand(2 * Math::PI)	
+				move_fuzzily_towards(@search_direction)
+			else
+				move_fuzzily_towards(@search_direction)
+			end
+		else	
 			# With one or more food items available, the critter must decide if it should engage one or indeed any food items at all. 
 			# Distance to food, activation energy, the critter's current store of energy all together ultimately define the probability
 			# of the critter's success in engaging a particular food item. 
-			# 
-			# if decide == YES
-			#     move_towards_fuzzily
-			#
-			# if decide == NO
-			# 	  continue search for better prospects
-			#
+
+			@elapsed_time_without_finding_food = 0
+			@food = detected_food[0]	
+			@purpose = :consume_food
 		end
 	end
 
 	def consume_food
-
+		# If not within interaction distance keep moving towards the food
+		if (@x - @food.x).abs > Simulation::INTERACTION_RANGE && (@y - @food.y).abs > Simulation::INTERACTION_RANGE
+			angle = interception_angle(@food.x, @food.y)
+			move_fuzzily_towards(angle)
+		# If close enough to interact stop motion and start critter/food interaction/messaging
+		else
+			move_idle
+		end
 	end
 
 	def reproduce
-#		Create a new critter
-#		offspring = Critter.new(@x,@y,@width,@height,self)
-#		changed
-#		notify_observers offspring, :born
-#		@biological_clock = 100
+		offspring = Critter.new(@x,@y,@width,@height,@simulation,self)
+		changed
+		notify_observers offspring, :born
+		@biological_clock = 100
 	end
 
 	def ask_for_help
@@ -199,70 +231,59 @@ class Critter < SimulationItem
 # ================================================== Motion & Detection ==========================================
 
 	def move_idle
-		@x += rand(@step_size) - 10 
-		@y += rand(@step_size) - 10 
+		@x += rand(@step_size*2) - @step_size 
+		@y += rand(@step_size*2) - @step_size 
 		# Keep critters within view
 		keep_within_viewable	
-		
-		@angle += (rand(90)*Math::PI/180) - (45*Math::PI/180)
+		@angle += (rand(90) * Math::PI/180) - (45 * Math::PI/180)
 	end
 
-	def move_towards_fuzzily(x,y)
-		# Decrease the x distance from critter to target 
-		delta_x = rand(@step_size/2)
-		delta_y = rand(@step_size/2)
-		if (x > @x) then @x += delta_x else @x -= delta_x end
-		if (y > @y) then @y += delta_y else @y -= delta_y end
-		# Determine critter's layer angle such that it looks like it's oriented toward the target 
-		@angle = interception_angle(x,y)
+	# Used for forming herds
+	def move_fuzzy_orbit(x,y)
+		#  Add code to enable fuzzy orbiting
 	end
 
-	def move_away_fuzzily(x,y)
-		delta_x = rand(@step_size/2)
-		delta_y = rand(@step_size/2)
-		if (x > @x) then @x -= delta_x else @x += delta_x end
-		if (y > @y) then @y -= delta_y else @y += delta_y end
-		# Add PI to orient 180 degrees away from target
-		@angle = interception_angle(x,y) + Math::PI
+	# Angle argument from 0 to 2PI
+	def move_fuzzily_towards(angle)
+		@angle = angle	
+		@x += Math.cos(angle) * @step_size
+		@y += Math.sin(angle) * @step_size 
+		keep_within_viewable
 	end
 
 	def keep_within_viewable
-		# Keep critters within view
 		if @x < 0 then @x += 15 end
 		if @x > Simulation::SIMULATION_WIDTH then @x -= 15 end
 		if @y < 0 then @y += 15 end
 		if @y > Simulation::SIMULATION_HEIGHT then @y -= 15 end
 	end
 
+	#  Interception angle in radians
 	def interception_angle(x,y)
-		 #    
 		#	  y
 		#	  ^	    _____
 		#	  |    (_____:)   (critter is oriented to the right with angle = 0 radians
 		#	  |
 		#	  |
 		#	 (0,0) ----> x
-		
-		#  Interception angle in radians
 		angle = 0
-		if @x > x
-			if @y > y
-				angle = Math.atan((y-@y)/(x-@x)) + Math::PI 
+		if x == @x	
+			if y >= @y	
+				angle = Math::PI / 2.0	
 			else
-			 	angle = Math::PI - Math.atan((y-@y)/-(x-@x))
-			end
-		else 
-			if @y > y 
-				angle = Math.atan((y-@y)/(x-@x))	
-			else
-				angle = Math.atan((y-@y)/(x-@x))
+				angle = 3.0 * Math::PI / 2.0
 			end	
-		end
+		elsif x < @x
+			angle = Math::PI + Math.atan((y-@y)/(x-@x))
+		else
+			angle = Math.atan((y-@y)/(x-@x))
+		end	
 		angle
 	end
 
-	# Use of smell incurs energy cost.  Smell returns array of all food_items within range of detection
+  	# Smell returns array of all food_items within range of detection in order from closest to farthest
 	def smell
+		# Use of smell incurs energy cost	
 		@energy -= (@smell_range * @smell_cost/100.0).ceil
 
 		food_in_range = []
@@ -273,6 +294,7 @@ class Critter < SimulationItem
 					food_in_range << food
 				end
 			end	
+			food_in_range = food_in_range.sort_by {|f| [(f.x-@x).abs, (f.y-@y).abs]}
 		end
 		food_in_range
 	end
@@ -300,7 +322,8 @@ class Critter < SimulationItem
 	end
 
 	def is_alive?
-		if @energy <= 0 && @is_alive
+		if @energy <= 0 || @age == @lifespan 
+			p "Critter is dead"	
 			@energy = 0
 			changed
 			notify_observers self,:dead
