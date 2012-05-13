@@ -7,7 +7,7 @@ module SimulationData
 	GRID_RESOLUTION = 10
 	TIME_INCREMENT = 0.2
 	MAX_POPULATION = 100
-	INTERACTION_RANGE = 15	# The min distance two things have to be to interact w/each other
+	INTERACTION_RANGE = 15.0	# The min distance two things have to be to interact w/each other
 
 	def all_layers
 		@all_layers ||= []	

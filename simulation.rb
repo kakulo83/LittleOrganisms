@@ -16,9 +16,9 @@ module Simulation
 	end
 
 	def init_simulation(num)
-		food0 = Food.new(456,378,35,35)
-		food1 = Food.new(324,876,35,35,false)
-		food2 = Food.new(678,400,35,35)
+		food0 = Food.new(456,378,35,35,8)
+		food1 = Food.new(324,876,35,35,4)
+		food2 = Food.new(678,400,35,35,20)
 
 		add_food_item(food0)
 		add_food_item(food1)
@@ -32,7 +32,13 @@ module Simulation
 	end
 
 	def refresh 
+		# Update season (availability of and type of food)	
+		update_environment
 		all_layers.each { |layer| layer.update }
+	end
+
+	def update_environment
+		# update the season	
 	end
 
 	# Listener for Critter issued events
