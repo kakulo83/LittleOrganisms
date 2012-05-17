@@ -30,13 +30,13 @@ class Critter < SimulationItem
 		@traits = {}	
 		@is_alive = true
 		@step_size = 10.0 		
-		@age = 0	
+		#@age = 0	
 		@is_hungry = false	
-		#@priorities = [:consume_food, :search_for_food, :reproduce, :idle, :give_help]
-		@purpose = :idle
-		@purpose_is_new = false					# Used in tracking how long the current purpose has been executing	
-		@purpose_counter_start = 0				# Marks the start time for the new purpose
-		@purpose_counter = 0					# Counter for how many cycles the current purpose has been running
+		#@priorities = [:consume_food, :search_for_food, :ask_help, :reproduce, :idle, :give_help]
+		@behavior = :idle
+		@behavior_is_new = false					# Used in tracking how long the current behavior has been executing	
+		@behavior_counter_start = 0				# Marks the start time for the new behavior
+		@behavior_counter = 0					# Counter for how many cycles the current behavior has been running
 		@elapsed_time_on_search_path = 0		# Should I stay or should I go.. on the current search path.. not The Clash	
 		@search_direction = 0					# Used in the critter's search for food	
 		@all_food = []							# All food item[s] critter has smelled (detected)
@@ -50,7 +50,7 @@ class Critter < SimulationItem
 		@traits[:fat] = 20						# Energy stored in excess of normal storage
 		@traits[:biological_clock] = 100 		# Minimum time between reproduction cycles
 		@traits[:hunger_point] = 550			# Threshold where critter becomes hungry for food 
-		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other purposes 
+		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other behaviors 
 	    @traits[:smell_range] = 170 			# Maximum detection range for smell 
 		@traits[:smell_cost] = 2				# Energy cost to use smell ability
 		@traits[:bite_size] = 10				# Size of the energetic bite critter can take out of food items
@@ -90,117 +90,80 @@ class Critter < SimulationItem
 
 	def update
 		update_internal_state
-		if is_alive?	
-			ask_the_brain_what_to_do	
-			execute_purpose
-		else
-			return
-		end
+		ask_the_brain_what_to_do	
+		execute_behavior
 	end
 
 #===================================================== Internal Behavior ================================================
 
+	# update_internal_state will ask the brain about:  searching behavior, consuming behavior, reproduction behavior
 	def update_internal_state 
-		@energy -= @energy_consumption_rate
 		#@age += 1 
+		@energy -= @energy_consumption_rate
+		is_alie?	
 		if @biological_clock > 0 then @biological_clock -= 1 end
-		#if @energy <= @hunger_point then ask_the_brain_what_to_do(:search_for_food) end
-		#if @biological_clock == 0 then ask_the_brain_what_to_do(:reproduce) end	
 	end
 	
-	def ask_the_brain_what_to_do(potential_new_purpose=nil)
-		if potential_new_purpose	
-			case @purpose
-				when :idle
-					case potential_new_purpose 
-						when :search_for_food 
-							idle_or_search	
-						when :consume_food
-							idle_or_consume
-						when :give_help 
-							idle_or_help	
-						when :ask_for_help
-							idle_or_ask
-						when :reproduce 
-							idle_or_reproduce	
-					end
-				when :search_for_food 
-					case potential_new_purpose 
-						when :idle			
-							idle_or_search	
-						when :consume_food
-							search_or_consume	
-						when :give_help
-							search_or_help	
-						when :ask_for_help 
-							search_or_ask	
-						when :reproduce
-							search_or_reproduce	
-					end
-				when :consume_food 
-					case potential_new_purpose 
-						when :search_for_food 
-							search_or_consume	
-						when :idle
-							idle_or_consume	
-						when :give_help 
-							consume_or_help	
-						when :ask_for_help	
-							consume_or_ask	
-						when :reproduce
-							consume_or_reproduce
-					end
-				when :give_help	
-					case potential_new_purpose
-						when :idle
-							idle_or_help
-						when :search_for_food 
-							search_or_help	
-						when :reproduce
-							help_or_reproduce	
-						when :ask_for_help
-							help_or_ask	
-						when :consume_food	
-							consume_or_help
-					end
-				when :ask_for_help
-					case potential_new_purpose 
-						when :give_help
-							help_or_ask
-						when :search_for_food 
-							search_or_ask	
-						when :consume_food 
-							consume_or_ask	
-						when :reproduce 
-							ask_or_reproduce
-						when :idle
-							idle_or_ask	
-					end
-				when :reproduce
-					case potential_new_purpose 
-						when :ask_for_help 
-							ask_or_reproduce	
-						when :search_for_food 
-							search_or_ask	
-						when :give_help
-							help_or_reproduce	
-						when :consume_food		
-							consume_or_reproduce
-						when :idle
-							idle_or_reproduce
-					end
+	def ask_the_brain_what_to_do(potential_new_behavior=nil)
+		# When potentially switching between behaviors 
+		if potential_new_behavior	
+			behavior_set = [@behavior, potential_new_behavior].to_set	
+			case behavior_set 
+				when [:idle, :search_for_food].to_set
+					idle_or_search
+				when [:idle, :consume_food].to_set	
+					idle_or_consume	
+				when [:idle, :give_help].to_set
+					idle_or_help
+				when [:idle, :ask_for_help].to_set
+					idle_or_ask
+				when [:idle, :reproduce].to_set
+					idle_or_reproduce
+				when [:search_for_food, :consume_food].to_set
+					search_or_consume
+				when [:search_for_food, :give_help].to_set	
+					search_or_help
+				when [:search_for_food, :ask_for_help].to_set	
+					search_or_ask
+				when [:search_for_food, :reproduce].to_set	
+					search_or_reproduce
+				when [:consume_food, :give_help].to_set
+					consume_or_help	
+				when [:consume_food, :ask_for_help].to_set
+					consume_or_ask
+				when [:consume_food, :reproduce].to_set
+					consume_or_reproduce
+				when [:give_help, :ask_for_help].to_set
+					help_or_ask
+				when [:give_help, :reproduce].to_set	
+					help_or_reproduce
+				when [:ask_for_help, :reproduce].to_set
+					ask_or_reproduce
 			end
+		# When not switching between behaviors 
 		else
-			# If no purpose has been put forth for consideration, decide what the current purpose should be
-			# If hungry search for food	
-			# If not hungry, not reproduction, not help, then idle
-			# If not hungry, not help, able to reproduce then reproduce
-			# If not hungry, not reproduce, asked for help, then help	
+			if is_hungry?
+			#	if expected_outcome_of_asking > expected_outcome_of_searching
+			#		ask_the_brain_what_to_do :ask_for_help				
+			#	else
+			#		ask_the_brain_what_to_do :search_for_food	
+			#	end
+			elsif can_reproduce?	
+			#	if value_of_reproducing > risk_of_reproducing
+			#		ask_the_brain_what_to_do :reproduce	
+			#	end
+			else
+			# 	if weight_value_of_idling > weight_value_of_helping
+			#		ask_the_brain_what_to_do :idle
+			#	else
+			#		ask_the_brain_what_to_do :give_help	
+			#	end
+			end
 		end
 	end
 
-	def execute_purpose
-		case @purpose 
+	def execute_behavior
+		case @behavior 
 		when :consume_food
 			consume_food
 		when :search_for_food
@@ -406,6 +369,10 @@ class Critter < SimulationItem
 		end	   
 	end
 
+	def can_reproduce?
+		if @biological_clock == 0 then true else false end
+	end
+
 	def is_starving?
 		if @energy <= @starvation_point then true else false end	
 	end
@@ -436,25 +403,25 @@ class Critter < SimulationItem
 	end
 
 	def should_search_for_food?
-		if @purpose == :search_for_food
+		if @behavior == :search_for_food
 			# Continue the search
 			return	
-		elsif @purpose == :consume_food 
+		elsif @behavior == :consume_food 
 			# Should critter switch from consume to search?	
 			if @food.nil? 
-				@purpose = :search_for_food 
+				@behavior = :search_for_food 
 				reset_elapsed_time_on_search_path
 				@paid_activation_energy = false
 			end
-		elsif @purpose == :reproduce	
+		elsif @behavior == :reproduce	
 			# Should critter switch from reproduce to search?	
-			@purpose = :search_for_food
-		elsif @purpose == :give_help	
+			@behavior = :search_for_food
+		elsif @behavior == :give_help	
 			# Should critter switch from helping to search?	
-		elsif @purpose == :idle
+		elsif @behavior == :idle
 			# Should critter switch from idle to search?
 			if is_hungry? 
-				@purpose = :search_for_food
+				@behavior = :search_for_food
 				@paid_activation_energy = false
 			end
 		else 
@@ -464,7 +431,7 @@ class Critter < SimulationItem
 
 	def should_consume_food?
 		@food = @all_foods[0]						
-		@purpose = :consume_food
+		@behavior = :consume_food
 	end
 
 
@@ -473,51 +440,66 @@ class Critter < SimulationItem
 
 	# IDLE
 	def idle_or_search
+		
 	end
 
 	def idle_or_consume
+
 	end
 
 	def idle_or_help
+
 	end
 
 	def idle_or_ask
+
 	end
 
 	def idle_or_reproduce
+
 	end
 
 	# SEARCH
 	def search_or_consume
+
 	end
 
 	def search_or_help
+
 	end
 
 	def search_or_ask
+
 	end
 
 	def search_or_reproduce
+
 	end
 
 	# CONSUME
 	def consume_or_help
+
 	end
 
 	def consume_or_ask
+
 	end
 
 	def consume_or_reproduce
+
 	end
 
 	# HELP
 	def help_or_ask
+
 	end
 
 	def help_or_reproduce
+
 	end
 
 	#ASK
 	def ask_or_reproduce
+
 	end
 end
