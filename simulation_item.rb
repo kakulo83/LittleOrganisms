@@ -1,5 +1,5 @@
 class SimulationItem
-	attr_accessor :image_name, :angel, :x, :y, :width, :height, :visible
+	attr_accessor :image_name, :angle, :x, :y, :width, :height, :visible
 
 	def initialize(x, y, width, height, visible=true, image_name=nil)
 		@image_name = image_name
@@ -8,6 +8,7 @@ class SimulationItem
 		@y = y || 0
 		@width = width
 		@height = height
+		@scale = 1.0
 		@visible = visible
 	end	
 end

@@ -17,17 +17,17 @@ module SimulationData
 		@all_critters ||= []	
 	end
 
-	def all_food_items
+	def all_foods
 		@all_foods ||= []	
 	end
 
 	def add_subLayer(item)
-		# Sync Critter array	
+		# Sync Critter/Food arrays	
 		case item
 		when Critter
 			all_critters << item
 		when Food
-			all_food_items << item
+			all_foods << item
 		end
 		# Add to all_layers	
 		new_layer = ImageLayer.alloc.initWithItem(item)
@@ -37,6 +37,14 @@ module SimulationData
 	end
 
 	def remove_subLayer(item)
+		# Sync Critter/Food arrays
+		case item
+		when Critter
+			all_critters.delete(item)
+		when Food
+			all_foods.delete(item)
+		end
+		# Remove from all_layers
 		layer_to_remove = all_layers.detect{ |l| l.item == item}			
 		if layer_to_remove
 			layer_to_remove.removeFromSuperlayer if layer_to_remove.respond_to?(:removeFromSuperlayer)	
@@ -55,10 +63,12 @@ module SimulationData
 
 	def remove_critter(critter)
 		remove_subLayer(critter)
+		#@all_critters.delete(critter)
 	end
 
 	def remove_food(food)
 		remove_subLayer(food)
+		#@all_foods.delete(food)
 	end
 
 	def number_of_critters

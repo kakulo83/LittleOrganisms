@@ -46,6 +46,9 @@ class ImageLayer < CALayer
 		self.bounds = CGRectMake(0,0,@width,@height)
 		self.position = CGPointMake(@x,@y)
 		self.transform = CATransform3DMakeRotation(angle, 0, 0, 1.0)
+		#self.transform = CATransform3DMakeScale(item.scale,item.scale,item.scale)
+		#CGAffineTransform transform = CGAffineTransformConcat(CGAffineTransformMakeRotation(angle), CGAffineTransformMakeScale(item.scale, item.scale))
+		#setAffineTransform(transform)
 		context = NSGraphicsContext.currentContext		
 			
 	end
