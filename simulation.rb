@@ -20,11 +20,11 @@ module Simulation
 	end
 
 	def init_simulation(num_critter, num_food)
-		food0 = Food.new(645,730,35,35,5,300.0)
+		food0 = Food.new(645,730,35,35,5,600.0)
 		food0.add_observer self	
 		add_food_item(food0)
 
-		food1 = Food.new(550,670,35,35,10,300.0)	
+		food1 = Food.new(550,670,35,35,10,600.0)	
 		food1.add_observer self	
 		add_food_item(food1)
 
@@ -61,7 +61,10 @@ module Simulation
 			when :dead
 				remove_critter item 
 			when :born
-				if all_critters.size < MAX_POPULATION then add_critter item end
+				if all_critters.size < MAX_POPULATION 
+					item.add_observer self	
+					add_critter item 
+				end
 			when :ask_for_help
 				p "Critter asks for help"
 			when :eating
@@ -72,7 +75,6 @@ module Simulation
 		when Food
 			case type
 			when :depleted
-				p "Simulation removing food"	
 				remove_food item
 			end
 		end	

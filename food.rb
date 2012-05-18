@@ -37,7 +37,6 @@ class Food < SimulationItem
 		# Decrease energy content of food	
 		@nutritional_content -= bite_size 
 		if @nutritional_content <= 0
-			p "Food depleted"
 			changed
 			notify_observers self, :depleted
 			return bite_size = 0

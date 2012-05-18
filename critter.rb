@@ -1,6 +1,7 @@
 require 'simulation_item'
 require 'observer'
 require 'json'
+require 'set'
 
 class Critter < SimulationItem
 	include Observable
@@ -48,7 +49,7 @@ class Critter < SimulationItem
 		@traits[:energy_capacity] = 650			# The total amount of energy, not including fat, a critter can store
 		@traits[:energy_consumption_rate] = 1	# Rate of normal metabolic energy consumption
 		@traits[:fat] = 20						# Energy stored in excess of normal storage
-		@traits[:biological_clock] = 100 		# Minimum time between reproduction cycles
+		@traits[:biological_clock] = 50 		# Minimum time between reproduction cycles
 		@traits[:hunger_point] = 550			# Threshold where critter becomes hungry for food 
 		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other behaviors 
 	    @traits[:smell_range] = 170 			# Maximum detection range for smell 
@@ -82,15 +83,8 @@ class Critter < SimulationItem
 		end
 	end
 
-# 	Increasing the smell_range should incur an energy cost
-# 	Modifying one trait should have an effect on other traits.
-	def trait_to_trait_relationships
-		# Don't know what to put here yet, if anything
-	end
-
 	def update
 		update_internal_state
-		ask_the_brain_what_to_do	
 		execute_behavior
 	end
 
@@ -100,8 +94,10 @@ class Critter < SimulationItem
 	def update_internal_state 
 		#@age += 1 
 		@energy -= @energy_consumption_rate
-		is_alie?	
+		if is_hungry? then ask_the_brain_what_to_do :search_for_food end		
+		is_alive?	
 		if @biological_clock > 0 then @biological_clock -= 1 end
+		if can_reproduce? then ask_the_brain_what_to_do :reproduce end	
 	end
 	
 	def ask_the_brain_what_to_do(potential_new_behavior=nil)
@@ -148,16 +144,19 @@ class Critter < SimulationItem
 			#	else
 			#		ask_the_brain_what_to_do :search_for_food	
 			#	end
+				ask_the_brain_what_to_do :search_for_food
 			elsif can_reproduce?	
 			#	if value_of_reproducing > risk_of_reproducing
 			#		ask_the_brain_what_to_do :reproduce	
 			#	end
+				ask_the_brain_what_to_do :reproduce	
 			else
 			# 	if weight_value_of_idling > weight_value_of_helping
 			#		ask_the_brain_what_to_do :idle
 			#	else
 			#		ask_the_brain_what_to_do :give_help	
 			#	end
+				ask_the_brain_what_to_do :idle
 			end
 		end
 	end
@@ -191,7 +190,7 @@ class Critter < SimulationItem
 		if detected_food.size == 0
 			@elapsed_time_on_search_path += 1			
 			# If the current search direction has been unsuccessful for too long try out a new direction; this goes for the critter too
-
+			
 			# Start the search with a random path 
 			if @elapsed_time_on_search_path == 1	
 				@search_direction = rand(2 * Math::PI)
@@ -211,7 +210,7 @@ class Critter < SimulationItem
 			# With one or more food items available, the critter must decide if it should engage one or indeed any of the food items in the list. 
 			# Distance to food, activation energy, the critter's current store of energy all together ultimately define the probability
 			# of the critter's success in engaging a particular food item and thus whether it chooses to pursue a particular food item.
-			ask_the_brain_what_to_do(:consume_food)
+			ask_the_brain_what_to_do :consume_food
 		end
 	end
 	
@@ -220,7 +219,7 @@ class Critter < SimulationItem
 	# Should it consume to 100% energy and fat?	
 	def consume_food
 		if @food.nil? 
-			ask_the_brain_what_to_do(:search_for_food) 
+			ask_the_brain_what_to_do :search_for_food 
 			return	
 		end
 
@@ -234,18 +233,17 @@ class Critter < SimulationItem
 		# If the activation energy has been paid	
 		if @paid_activation_energy 	
 			bite = @food.consume(@bite_size)	
-			# If the bite is nil (empty), the food no longer exists 
+			# If the bite is empty the food no longer exists 
 			if bite == 0
 				@food = nil	
-				p "Bite was empty :("	
-				ask_the_brain_what_to_do(:search_for_food)
+				ask_the_brain_what_to_do :search_for_food
 				return
 			else
 				@energy += bite 
 			end
 			# If the last bite resulted in the critter being full, ask the brain what to do now
 			if @energy >= @energy_capacity 
-				ask_the_brain_what_to_do(:idle) 
+				ask_the_brain_what_to_do :idle 
 			end
 		# Pay the activation energy cost for the food item, start consumption in the next cycle
 		else	
@@ -260,7 +258,7 @@ class Critter < SimulationItem
 		notify_observers offspring, :born
 		@biological_clock = @traits[:biological_clock]
 		@energy -= 20	
-		#ask_the_brain_what_to_do :search_for_food
+		ask_the_brain_what_to_do 
 	end
 
 	def ask_for_help
@@ -387,7 +385,7 @@ class Critter < SimulationItem
 
 	def is_alive?
 		if @energy <= 0  # || @age == @lifespan 
-			p "Critter is dead"	
+			p "Critter has died"	
 			@energy = 0
 			# Inform the simulation object that the critter is dead	
 			changed
@@ -402,53 +400,22 @@ class Critter < SimulationItem
 		@elapsed_time_on_search_path = 0	
 	end
 
-	def should_search_for_food?
-		if @behavior == :search_for_food
-			# Continue the search
-			return	
-		elsif @behavior == :consume_food 
-			# Should critter switch from consume to search?	
-			if @food.nil? 
-				@behavior = :search_for_food 
-				reset_elapsed_time_on_search_path
-				@paid_activation_energy = false
-			end
-		elsif @behavior == :reproduce	
-			# Should critter switch from reproduce to search?	
-			@behavior = :search_for_food
-		elsif @behavior == :give_help	
-			# Should critter switch from helping to search?	
-		elsif @behavior == :idle
-			# Should critter switch from idle to search?
-			if is_hungry? 
-				@behavior = :search_for_food
-				@paid_activation_energy = false
-			end
-		else 
-			# 
-		end	
-	end
-
-	def should_consume_food?
-		@food = @all_foods[0]						
-		@behavior = :consume_food
-	end
-
-
-
-
-
 	# IDLE
 	def idle_or_search
-		
+		if @is_hungry 
+			@behavior = :search_for_food 
+			reset_elapsed_time_on_search_path	
+		else 
+			@behavior = :idle 
+		end
 	end
 
 	def idle_or_consume
-
+		unless @is_hungry then @behavior = :idle end
 	end
 
 	def idle_or_help
-
+		# Decision should be based on whether helping is valued, and if helping is valued at what point of risk is that value negated.
 	end
 
 	def idle_or_ask
@@ -456,12 +423,24 @@ class Critter < SimulationItem
 	end
 
 	def idle_or_reproduce
-
+		if @biological_clock == 0 then @behavior = :reproduce  else @behavior = :idle end
 	end
 
 	# SEARCH
 	def search_or_consume
+		# The reason the critter searches is to ultimately find food that it can consume, so the critter should always be closing.
+		# Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  If the critter is not closing 
+		# then it should hit the bricks.
+		@all_foods = smell		
 
+		if @all_foods.size > 0
+			# Make a decision as to which food to consume.  If none, then continue search or ask for help	
+			@food = @all_foods[0]	
+			@behavior = :consume_food 
+		else 
+			@paid_activation_energy = false	
+			@behavior = :search_for_food 
+		end 
 	end
 
 	def search_or_help

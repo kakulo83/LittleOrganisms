@@ -40,8 +40,10 @@ module SimulationData
 		# Sync Critter/Food arrays
 		case item
 		when Critter
+			p "Removing critter from all_critters array"	
 			all_critters.delete(item)
 		when Food
+			p "Removing food from all_foods array"
 			all_foods.delete(item)
 		end
 		# Remove from all_layers
