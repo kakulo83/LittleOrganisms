@@ -1,6 +1,5 @@
 require 'simulation_item'
 require 'observer'
-require 'json'
 require 'set'
 
 class Critter < SimulationItem
@@ -8,12 +7,10 @@ class Critter < SimulationItem
 
 	attr_reader :energy, :traits, :priorities
 
-	def initialize(x, y, width, height, simulation, parent=nil)
+	def initialize(x, y, simulation, parent=nil)
 		super
 		@x = x
 		@y = y
-		@width = width
-		@height = height	
 		@image_name = "graphics/critter.png"
 		@simulation = simulation	
 		initialize_internal_variables
@@ -28,14 +25,15 @@ class Critter < SimulationItem
 	# Initializes instance variables needed for internal book keepings and logic etc.
 	def initialize_internal_variables
 		@energy = 340 
+		@width = 10 
+		@height = 10 
 		@traits = {}	
 		@is_alive = true
 		@step_size = 10.0 		
-		#@age = 0	
-		@is_hungry = false	
+		@age = 0	
 		#@priorities = [:consume_food, :search_for_food, :ask_help, :reproduce, :idle, :give_help]
 		@behavior = :idle
-		@behavior_is_new = false					# Used in tracking how long the current behavior has been executing	
+		@behavior_is_new = false				# Used in tracking how long the current behavior has been executing	
 		@behavior_counter_start = 0				# Marks the start time for the new behavior
 		@behavior_counter = 0					# Counter for how many cycles the current behavior has been running
 		@elapsed_time_on_search_path = 0		# Should I stay or should I go.. on the current search path.. not The Clash	
@@ -48,7 +46,7 @@ class Critter < SimulationItem
 	def standard_traits 
 		@traits[:energy_capacity] = 650			# The total amount of energy, not including fat, a critter can store
 		@traits[:energy_consumption_rate] = 1	# Rate of normal metabolic energy consumption
-		@traits[:fat] = 20						# Energy stored in excess of normal storage
+#		@traits[:fat] = 200						# Energy stored in excess of normal storage
 		@traits[:biological_clock] = 50 		# Minimum time between reproduction cycles
 		@traits[:hunger_point] = 550			# Threshold where critter becomes hungry for food 
 		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other behaviors 
@@ -90,9 +88,17 @@ class Critter < SimulationItem
 
 #===================================================== Internal Behavior ================================================
 
-	# update_internal_state will ask the brain about:  searching behavior, consuming behavior, reproduction behavior
 	def update_internal_state 
-		#@age += 1 
+		@age += 1 
+		# Critter reaches adult size at roughly 100 units of age
+		if @age <= 100 
+			@width = (-14.0 + 24 * Math.log10(@age + 10)).ceil	
+			@height = @width
+		else
+			# I'm a big kid look what I can do	
+			@width, @height = 35,35
+		end	
+
 		@energy -= @energy_consumption_rate
 		if is_hungry? then ask_the_brain_what_to_do :search_for_food end		
 		is_alive?	
@@ -102,6 +108,7 @@ class Critter < SimulationItem
 	
 	def ask_the_brain_what_to_do(potential_new_behavior=nil)
 		# When potentially switching between behaviors 
+		# With 6 basic behaviors there are 15 (6*5/2) combination comparisons to make (actually fewer, some don't make sense)
 		if potential_new_behavior	
 			behavior_set = [@behavior, potential_new_behavior].to_set	
 			case behavior_set 
@@ -253,7 +260,7 @@ class Critter < SimulationItem
 	end
 
 	def reproduce
-		offspring = Critter.new(@x,@y,@width,@height,@simulation,self)
+		offspring = Critter.new(@x,@y,@simulation,self)
 		changed
 		notify_observers offspring, :born
 		@biological_clock = @traits[:biological_clock]
@@ -359,7 +366,6 @@ class Critter < SimulationItem
 
 	def is_hungry?
 		if @energy <= @hunger_point 
-			@is_hungry = true	
 			true
 		else
 			@is_hungry = false
@@ -402,7 +408,7 @@ class Critter < SimulationItem
 
 	# IDLE
 	def idle_or_search
-		if @is_hungry 
+		if is_hungry?
 			@behavior = :search_for_food 
 			reset_elapsed_time_on_search_path	
 		else 
@@ -411,7 +417,11 @@ class Critter < SimulationItem
 	end
 
 	def idle_or_consume
-		unless @is_hungry then @behavior = :idle end
+		if is_hungry?
+			@behavior = :consume
+		else
+			@behavior = :idle
+		end	
 	end
 
 	def idle_or_help
@@ -423,7 +433,7 @@ class Critter < SimulationItem
 	end
 
 	def idle_or_reproduce
-		if @biological_clock == 0 then @behavior = :reproduce  else @behavior = :idle end
+		if can_reproduce? then @behavior = :reproduce  else @behavior = :idle end
 	end
 
 	# SEARCH

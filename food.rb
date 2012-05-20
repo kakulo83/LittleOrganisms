@@ -12,12 +12,15 @@ class Food < SimulationItem
 		@y = y
 		@width = width
 		@height = height
-		@activation_energy = activation_energy
-		@nutritional_capacity = nutritional_content	
-		@nutritional_content = nutritional_content
+		@activation_energy = activation_energy					# Energy critters must expend to consume food
+		@nutritional_capacity = nutritional_content				# Total capacity of energy food item contains
+		@nutritional_content = nutritional_content				# Currrent amount of energy food contains
+		@expiration_date = rand(200)							# Food shelf-life 
+		@age = 0	
+		@rate_of_rotting = 40
 
 		if activation_energy <= 10 
-			@easy_to_eat = true 
+			@easy_to_eat = true							 
 			@image_name = "graphics/easy_food.png"	
 		else 
 			@easy_to_eat = false 
@@ -26,12 +29,30 @@ class Food < SimulationItem
 	end
 
 	def update
-		# The relevant interaction and updating occurs in consume	
+		# Rapidly reduce the energy content and size of food items past their FDA shelf-life date. 
+		@age += 1	
+		if is_past_shelf_life?	
+			@nutritional_content -= @rate_of_rotting 
+			@width -= @rate_of_rotting * @width / @nutritional_capacity.to_f
+			@height = @width
+			if @nutritional_content <= 0	
+				changed
+				notify_observers self, :depleted
+			end
+		end
 	end
 
 	def is_hard_to_eat?
 		@easy_to_eat
 	end	
+
+	def is_past_shelf_life?
+		if @age >= @expiration_date
+			true
+		else
+			false
+		end	
+	end
 
 	def consume(bite_size) 
 		# Decrease energy content of food	
