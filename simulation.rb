@@ -1,3 +1,18 @@
+#    Life-Simulation
+#
+#	 Copyright (c) 2012 Robert Carter 
+#	 
+#	 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+#	 to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+#	 and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#	 
+#	 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+#	 
+#	 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+#	 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+#	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+#	 IN THE SOFTWARE.
+
 require 'simulation_data'
 
 module Simulation
@@ -8,7 +23,7 @@ module Simulation
 	def start_simulation
 		$simulation_time = 0
 		init_environment()
-		init_simulation(1,20)	
+		init_simulation(1,10)	
 
 		# Start the all important simulation loop
 		@timer = NSTimer.scheduledTimerWithTimeInterval SimulationData::TIME_INCREMENT, 
@@ -23,9 +38,9 @@ module Simulation
 	end
 
 	def init_environment()
-		@abundance_of_energy = []	
+		@seasonal_multiplier = []	# Used to wax/wane the TOTAL_AVAILABLE_ENERGY energy throughout time; just like variable sun-light output
 		CYCLES_PER_SEASON.times do |time|
-			@abundance_of_energy[time] = (0.25 + (0.75/2) + (0.75/2) * Math.cos(2*Math::PI*time/CYCLES_PER_SEASON.to_f)).round(2)
+			@seasonal_multiplier[time] = (0.25 + (0.75/2) + (0.75/2) * Math.cos(2*Math::PI*time/CYCLES_PER_SEASON.to_f)).round(2)
 		end
 	end
 
@@ -54,22 +69,24 @@ module Simulation
 	end
 
 	def refresh 
-		if $simulation_time <= CYCLES_PER_SEASON-1
-		   	$simulation_time += 1 
-		else 
-			$simulation_time = 0 
-		end	
+		if $simulation_time <= CYCLES_PER_SEASON-1 then $simulation_time += 1 else $simulation_time = 0 end	
 		update_environment
-		
-		# Update all simulation	items (critters and food for now)
 		all_layers.each { |layer| layer.update }
 	end
 
 	def update_environment
-		if $simulation_time == 99 || $simulation_time == 199 || $simulation_time == 399	
-			food_growth_multiplier = 1.0 + @abundance_of_energy[$simulation_time]
-
+		if $simulation_time == 166 || $simulation_time == 333 || $simulation_time == 499 
+			food_growth_multiplier = 1.0 + @seasonal_multiplier[$simulation_time]
 			num_of_new_food_items = (number_of_foods * food_growth_multiplier).ceil
+			# Simulation has X number of Food items.  For this particular point in time, the available energy in the system is 
+			# @seasonal_multiplier * TOTAL_AVAILABLE_ENERGY
+	
+			# If the sum of all the food energy < the instantaneous available total energy (sunlight), then what remains is available to the system 
+			# as new food items.  The number of which is only bounded by the food_growth_multiplier 
+
+			available_energy = @seasonal_multiplier * MAX_AVAILABLE_ENERGY 
+
+			all_foods.each do |food| { sum += food.nutritional_content }
 
 			num_of_new_food_items.times do
 				food = Food.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),35,35,rand(20),300+rand(300))

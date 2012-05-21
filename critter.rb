@@ -1,3 +1,18 @@
+#    Life-Simulation
+#
+#	 Copyright (c) 2012 Robert Carter 
+#	 
+#	 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), 
+#	 to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, 
+#	 and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#	 
+#	 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+#	 
+#	 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+#	 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
+#	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
+#	 IN THE SOFTWARE.
+
 require 'simulation_item'
 require 'observer'
 require 'set'
@@ -44,11 +59,11 @@ class Critter < SimulationItem
 	end
 
 	def standard_traits 
-		@traits[:energy_capacity] = 650			# The total amount of energy, not including fat, a critter can store
+		@traits[:energy_capacity] = 750			# The total amount of energy, not including fat, a critter can store
 		@traits[:energy_consumption_rate] = 1	# Rate of normal metabolic energy consumption
 #		@traits[:fat] = 200						# Energy stored in excess of normal storage
 		@traits[:biological_clock] = 50 		# Minimum time between reproduction cycles
-		@traits[:hunger_point] = 550			# Threshold where critter becomes hungry for food 
+		@traits[:hunger_point] = 500			# Threshold where critter becomes hungry for food 
 		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other behaviors 
 	    @traits[:smell_range] = 170 			# Maximum detection range for smell 
 		@traits[:smell_cost] = 2				# Energy cost to use smell ability
@@ -61,7 +76,8 @@ class Critter < SimulationItem
 #		@traits[:similarity] = 0
 #		@traits[:charity] = 0
 #       @traits{:greediness] = 0				# Used in food interaction behavior.  Greedy critters will eat more than they need etc.
-#		@traits[:nurturing] = 0
+		@traits[:reproduction_minimum] = 400	# Minimum energy needed to reproduce.
+		@traits[:reproduction_cost] = 100
 		@traits[:lifespan] = 800				# Maximum lifespan of heatlhy critters	
 		express_traits
 	end
@@ -72,6 +88,7 @@ class Critter < SimulationItem
 		# Add code to mutate traits from parent
 		@traits = parent.traits
 		express_traits
+		@energy = @reproduction_cost
 	end
 
 	# 'Express' the 'genes' through instance variables, so they can be easily used for logic/computation etc.
@@ -151,19 +168,28 @@ class Critter < SimulationItem
 			#	else
 			#		ask_the_brain_what_to_do :search_for_food	
 			#	end
-				ask_the_brain_what_to_do :search_for_food
+			
+			#	ask_the_brain_what_to_do :search_for_food
+				@behavior = :search_for_food
+
 			elsif can_reproduce?	
 			#	if value_of_reproducing > risk_of_reproducing
 			#		ask_the_brain_what_to_do :reproduce	
 			#	end
-				ask_the_brain_what_to_do :reproduce	
+			
+			#	ask_the_brain_what_to_do :reproduce	
+				@behavior = :reproduce	
+			
 			else
 			# 	if weight_value_of_idling > weight_value_of_helping
 			#		ask_the_brain_what_to_do :idle
 			#	else
 			#		ask_the_brain_what_to_do :give_help	
 			#	end
-				ask_the_brain_what_to_do :idle
+		
+			#	ask_the_brain_what_to_do :idle
+				@behavior = :idle	
+				
 			end
 		end
 	end
@@ -264,7 +290,7 @@ class Critter < SimulationItem
 		changed
 		notify_observers offspring, :born
 		@biological_clock = @traits[:biological_clock]
-		@energy -= 20	
+		@energy -= @reproduction_cost 
 		ask_the_brain_what_to_do 
 	end
 
@@ -374,7 +400,11 @@ class Critter < SimulationItem
 	end
 
 	def can_reproduce?
-		if @biological_clock == 0 then true else false end
+		if @biological_clock == 0 && @energy >= @reproduction_minimum
+			true
+		else
+			false
+		end
 	end
 
 	def is_starving?
@@ -391,7 +421,6 @@ class Critter < SimulationItem
 
 	def is_alive?
 		if @energy <= 0  # || @age == @lifespan 
-			p "Critter has died"	
 			@energy = 0
 			# Inform the simulation object that the critter is dead	
 			changed
@@ -439,18 +468,27 @@ class Critter < SimulationItem
 	# SEARCH
 	def search_or_consume
 		# The reason the critter searches is to ultimately find food that it can consume, so the critter should always be closing.
-		# Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  If the critter is not closing 
-		# then it should hit the bricks.
-		@all_foods = smell		
+		# Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  If the critter is not 
+		# closing then it should hit the bricks.
+	
+		# Make sure critter is hungry
+		if is_hungry?
+			@all_foods = smell		
 
-		if @all_foods.size > 0
-			# Make a decision as to which food to consume.  If none, then continue search or ask for help	
-			@food = @all_foods[0]	
-			@behavior = :consume_food 
-		else 
-			@paid_activation_energy = false	
-			@behavior = :search_for_food 
-		end 
+			if @all_foods.size > 0 
+				# Eventually make an "intelligent" decision on which food to pursue, for now, choose randomly 
+					#num_of_food = @all_foods.size	
+					#target = rand(num_of_food)
+					#@food = @all_foods[target]	
+				@food = @all_foods[0]
+				@behavior = :consume_food 
+			else 
+				@paid_activation_energy = false	
+				@behavior = :search_for_food 
+			end 
+		else
+			ask_the_brain_what_to_do
+		end
 	end
 
 	def search_or_help
