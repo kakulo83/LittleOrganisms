@@ -46,7 +46,6 @@ class Critter < SimulationItem
 		@is_alive = true
 		@step_size = 10.0 		
 		@age = 0	
-		#@priorities = [:consume_food, :search_for_food, :ask_help, :reproduce, :idle, :give_help]
 		@behavior = :idle
 		@behavior_is_new = false				# Used in tracking how long the current behavior has been executing	
 		@behavior_counter_start = 0				# Marks the start time for the new behavior
@@ -58,26 +57,34 @@ class Critter < SimulationItem
 		@paid_activation_energy = false			# Flag used in keeping track of state of activation energy payment.  No pay => we break your legs
 	end
 
+	# Evantually some of these values should be supplied by the simulator based on the statistics it has collected.  The simulator will try to tweak these traits
+	# so as to maximize the run-time of the simulation (how long the critters stay alive)
 	def standard_traits 
 		@traits[:energy_capacity] = 750			# The total amount of energy, not including fat, a critter can store
 		@traits[:energy_consumption_rate] = 1	# Rate of normal metabolic energy consumption
 #		@traits[:fat] = 200						# Energy stored in excess of normal storage
-		@traits[:biological_clock] = 50 		# Minimum time between reproduction cycles
+		@traits[:biological_clock] = 30 		# Minimum time between reprduction cycles
 		@traits[:hunger_point] = 500			# Threshold where critter becomes hungry for food 
 		@traits[:starvation_point] = 100		# Energy level where the need to consume food overrides all other behaviors 
 	    @traits[:smell_range] = 170 			# Maximum detection range for smell 
 		@traits[:smell_cost] = 2				# Energy cost to use smell ability
 		@traits[:bite_size] = 10				# Size of the energetic bite critter can take out of food items
 		@traits[:stubborness] = 15				# Determines how long critter will search on a path before it chooses a new one
-#		@traits[:cooperation] = 0
+		@traits[:self_reliance] = 0				# Used to determine if critter will ask for help in duress or not
+#		@traits[:cooperativeness] = 0
 #		@traits[:aggressiveness] = 0
-#		@traits[:risk] = 0
+#       @traits[:competitiveness] = 0			# Determines if critter is eager to compete for food
+#   	@traits[:apatheticness] = 0				# Determines if critter is unwilling to compete for food
+		@traits[:faith_in_charity] = 0			# Determines if critter is willing to idle while waiting for help instead of searching for food
+		@traits[:cautiousness] = 0				# Competes with appetite_for_risk 
+		@traits[:appetite_for_risk] = 0			# Competes with cautiousness
+#       @traits[:appetite_for_destruction] = 0  # Turn me around and take me back to the start, I must be losing my mind.
 #		@traits[:prejudice] = 0
 #		@traits[:similarity] = 0
 #		@traits[:charity] = 0
 #       @traits{:greediness] = 0				# Used in food interaction behavior.  Greedy critters will eat more than they need etc.
 		@traits[:reproduction_minimum] = 400	# Minimum energy needed to reproduce.
-		@traits[:reproduction_cost] = 100
+		@traits[:reproduction_cost] = 200
 		@traits[:lifespan] = 800				# Maximum lifespan of heatlhy critters	
 		express_traits
 	end
@@ -86,6 +93,7 @@ class Critter < SimulationItem
 # 	@energy = parent.traits[:nurturing]
 	def inherit_parent_traits(parent)
 		# Add code to mutate traits from parent
+		# Ensure trait values are positive and reasonably bounded
 		@traits = parent.traits
 		express_traits
 		@energy = @reproduction_cost
@@ -117,9 +125,12 @@ class Critter < SimulationItem
 		end	
 
 		@energy -= @energy_consumption_rate
-		if is_hungry? then ask_the_brain_what_to_do :search_for_food end		
 		is_alive?	
 		if @biological_clock > 0 then @biological_clock -= 1 end
+		
+		# When each internal condition warrants a change of behavior, ask the brain what to do	
+		if is_hungry? then ask_the_brain_what_to_do :search_for_food end		
+		if is_starving?	then ask_the_brain_what_to_do :ask_for_help end
 		if can_reproduce? then ask_the_brain_what_to_do :reproduce end	
 	end
 	
@@ -163,33 +174,12 @@ class Critter < SimulationItem
 		# When not switching between behaviors 
 		else
 			if is_hungry?
-			#	if expected_outcome_of_asking > expected_outcome_of_searching
-			#		ask_the_brain_what_to_do :ask_for_help				
-			#	else
-			#		ask_the_brain_what_to_do :search_for_food	
-			#	end
-			
-			#	ask_the_brain_what_to_do :search_for_food
 				@behavior = :search_for_food
-
+				search_or_ask	
 			elsif can_reproduce?	
-			#	if value_of_reproducing > risk_of_reproducing
-			#		ask_the_brain_what_to_do :reproduce	
-			#	end
-			
-			#	ask_the_brain_what_to_do :reproduce	
 				@behavior = :reproduce	
-			
 			else
-			# 	if weight_value_of_idling > weight_value_of_helping
-			#		ask_the_brain_what_to_do :idle
-			#	else
-			#		ask_the_brain_what_to_do :give_help	
-			#	end
-		
-			#	ask_the_brain_what_to_do :idle
 				@behavior = :idle	
-				
 			end
 		end
 	end
@@ -435,7 +425,12 @@ class Critter < SimulationItem
 		@elapsed_time_on_search_path = 0	
 	end
 
-	# IDLE
+	def decide_which_food_to_consume
+		@food = @all_foods[0]
+	end
+
+#=================================================== IDLE DECISIONS =================================================
+
 	def idle_or_search
 		if is_hungry?
 			@behavior = :search_for_food 
@@ -465,27 +460,45 @@ class Critter < SimulationItem
 		if can_reproduce? then @behavior = :reproduce  else @behavior = :idle end
 	end
 
-	# SEARCH
+#=================================================== SEARCH DECISIONS =================================================
+	
 	def search_or_consume
-		# The reason the critter searches is to ultimately find food that it can consume, so the critter should always be closing.
-		# Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  If the critter is not 
-		# closing then it should hit the bricks.
+		# The reason a critter searches is to ultimately find food that it can consume. When the critter is hungry it should always be closing
+		# in on food.  Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  
 	
 		# Make sure critter is hungry
 		if is_hungry?
 			@all_foods = smell		
-
-			if @all_foods.size > 0 
-				# Eventually make an "intelligent" decision on which food to pursue, for now, choose randomly 
-					#num_of_food = @all_foods.size	
-					#target = rand(num_of_food)
-					#@food = @all_foods[target]	
+			if @all_foods.size > 0	
 				@food = @all_foods[0]
-				@behavior = :consume_food 
-			else 
-				@paid_activation_energy = false	
-				@behavior = :search_for_food 
-			end 
+				@behavior = :consume_food
+			else
+				@behavior = :search_for_food
+			end	
+#			if @all_foods.size == 1
+#				# If the food is easy, is there a lot of competition?
+#				if @all_foods[0].is_easy_to_eat?
+#					@behavior = :consume_food
+#					@food = @all_foods[0]
+#				# If the food is hard, the decision is a little more involved.  	
+#				else 
+#					# energy level, appetite_for_risk, amount of competition, stubborness
+#					if @appetite_for_risk > @cautiousness
+#						@behavior = :consume_food						
+#					elsif @appetite_for_risk < @cautiousness
+#						@behavior = :search_for_food
+#					else
+#						coin_toss = rand(2)
+#						if coin_toss.is_odd? then @behavior = :consume_food else @behavior = :search_for_food end
+#					end
+#				end	
+#			elsif @all_foods.size > 1
+#				decide_which_food_to_consume	
+#				@behavior = :consume_food 
+#			else 
+#				@paid_activation_energy = false	
+#				@behavior = :search_for_food 
+#			end 
 		else
 			ask_the_brain_what_to_do
 		end
@@ -503,7 +516,7 @@ class Critter < SimulationItem
 
 	end
 
-	# CONSUME
+#=================================================== CONSUME DECISIONS =================================================
 	def consume_or_help
 
 	end
@@ -516,7 +529,7 @@ class Critter < SimulationItem
 
 	end
 
-	# HELP
+#=================================================== HELP DECISIONS =================================================
 	def help_or_ask
 
 	end
@@ -525,7 +538,8 @@ class Critter < SimulationItem
 
 	end
 
-	#ASK
+	
+#=================================================== ASK DECISIONS =================================================
 	def ask_or_reproduce
 
 	end

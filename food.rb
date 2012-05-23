@@ -19,9 +19,10 @@ require 'observer'
 class Food < SimulationItem
 	include Observable	
 
-	attr_reader :x, :y, :width, :height, :angle, :activation_energy, :nutritional_content
+	attr_reader :activation_energy, :nutritional_content
 
 	def initialize(x, y, width, height, activation_energy, nutritional_content)
+		# Remember to call your parent and pay respect to your ancestors	
 		super
 		@x = x
 		@y = y
@@ -30,7 +31,7 @@ class Food < SimulationItem
 		@activation_energy = activation_energy					# Energy critters must expend to consume food
 		@nutritional_capacity = nutritional_content				# Total capacity of energy food item contains
 		@nutritional_content = nutritional_content				# Currrent amount of energy food contains
-		@expiration_date = 100 + rand(200)							# Food shelf-life 
+		@expiration_date = 300 + rand(200)							# Food shelf-life 
 		@age = 0	
 		@rate_of_rotting = 40
 
@@ -57,7 +58,7 @@ class Food < SimulationItem
 		end
 	end
 
-	def is_hard_to_eat?
+	def is_easy_to_eat?
 		@easy_to_eat
 	end	
 

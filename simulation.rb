@@ -56,7 +56,7 @@ module Simulation
 		add_food_item(food1)
 
 		num_food.times do
-			food = Food.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+			food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
 			food.add_observer self
 			add_food_item(food)
 		end
@@ -72,32 +72,36 @@ module Simulation
 		if $simulation_time <= CYCLES_PER_SEASON-1 then $simulation_time += 1 else $simulation_time = 0 end	
 		update_environment
 		all_layers.each { |layer| layer.update }
+
 	end
 
 	def update_environment
-		if $simulation_time == 166 || $simulation_time == 333 || $simulation_time == 499 
-			food_growth_multiplier = 1.0 + @seasonal_multiplier[$simulation_time]
-			num_of_new_food_items = (number_of_foods * food_growth_multiplier).ceil
-			# Simulation has X number of Food items.  For this particular point in time, the available energy in the system is 
-			# @seasonal_multiplier * TOTAL_AVAILABLE_ENERGY
-	
-			# If the sum of all the food energy < the instantaneous available total energy (sunlight), then what remains is available to the system 
-			# as new food items.  The number of which is only bounded by the food_growth_multiplier 
-
-			available_energy = @seasonal_multiplier * MAX_AVAILABLE_ENERGY 
-
-			all_foods.each do |food| { sum += food.nutritional_content }
-
-			num_of_new_food_items.times do
-				food = Food.new(rand(SIMULATION_WIDTH),rand(SIMULATION_HEIGHT),35,35,rand(20),300+rand(300))
-				food.add_observer self
-				add_food_item(food)
-			end
+		if $simulation_time == 20 || $simulation_time == 166 || $simulation_time == 333 || $simulation_time == 499 
+			# Add new food items taking into consideration the population food items and the seasonal energy available.	
+			total_food_cost = 0.0
+		   	all_foods.each {|food| total_food_cost += food.nutritional_content }
+			available_energy = MAX_AVAILABLE_ENERGY * @seasonal_multiplier[$simulation_time] - total_food_cost
+			
+			max_number_of_new_food = (available_energy / 450.0).ceil
+		
+			if max_number_of_new_food < number_of_foods 
+				max_number_of_new_food.times do
+					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+					food.add_observer self
+					add_food_item(food)
+				end
+			else
+				number_of_foods.times do
+					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+					food.add_observer self
+					add_food_item(food)
+				end
+			end	
 		end
 	end
 
 	# Listener for Critter and Food issued events
-	def update(item,type,*additional)
+	def update(item, type, *additional)
 		case item
 		when Critter
 			case type
@@ -107,12 +111,14 @@ module Simulation
 				if all_critters.size < MAX_POPULATION 
 					item.add_observer self	
 					add_critter item 
-					add_data_point item
+					add_data_point item, type
 				end
 			when :ask_for_help
-				p "Critter asks for help"
+			
 			when :eating
-				p "Critter is eating"
+	
+			when :made_decision
+
 			else
 				p "Simulation.rb: What the hell critter event is this?"
 			end

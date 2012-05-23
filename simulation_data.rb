@@ -24,7 +24,7 @@ module SimulationData
 	TIME_INCREMENT = 0.2
 	MAX_POPULATION = 100
 	CYCLES_PER_SEASON = 500
-	MAX_AVAILABLE_ENERGY = 20000		# The total amount of energy available to the system at any given time (akin to sunshine) 
+	MAX_AVAILABLE_ENERGY = 20000.0		# The total amount of energy available to the system at any given time (akin to sunshine) 
 	INTERACTION_RANGE = 15.0			# The min distance two things have to be to interact w/each other
 
 	def all_layers
@@ -77,12 +77,25 @@ module SimulationData
 		remove_subLayer(food)
 	end
 
-	def add_data_point(item)
+	def add_data_point(item,type,*additional)
 		case item 
-			when Critter
+		when Critter
+			case type
+			when :born
 				#File.open('data/aggregate.data',"a") { |f| f << item.traits.to_json + "\n" }
-			when Food
+			when :dead
+				#File.open('data/aggregate.data',"a") { |f| f << item.traits.to_json + "\n" }
+			when :consume_decision
 
+			when :consuming
+				# Collect data on what the critter decided to eat
+			when :asking_decision
+
+			when :receiving	
+		
+			end
+		when Food
+			when :depleted
 		end
 	end
 
@@ -102,6 +115,5 @@ module SimulationData
 	def calculate_standard_deviation(trait)
 		# calculate standard deviation for trait
 	end
-
 
 end
