@@ -76,8 +76,8 @@ class Critter < SimulationItem
 #       @traits[:competitiveness] = 0			# Determines if critter is eager to compete for food
 #   	@traits[:apatheticness] = 0				# Determines if critter is unwilling to compete for food
 		@traits[:faith_in_charity] = 0			# Determines if critter is willing to idle while waiting for help instead of searching for food
-		@traits[:cautiousness] = 0				# Competes with appetite_for_risk 
-		@traits[:appetite_for_risk] = 0			# Competes with cautiousness
+		@traits[:cautiousness] = 10				# Competes with appetite_for_risk 
+		@traits[:appetite_for_risk] = 10 		# Competes with cautiousness
 #       @traits[:appetite_for_destruction] = 0  # Turn me around and take me back to the start, I must be losing my mind.
 #		@traits[:prejudice] = 0
 #		@traits[:similarity] = 0
@@ -109,6 +109,7 @@ class Critter < SimulationItem
 	def update
 		update_internal_state
 		execute_behavior
+		#p @behavior.to_s
 	end
 
 #===================================================== Internal Behavior ================================================
@@ -128,7 +129,7 @@ class Critter < SimulationItem
 		is_alive?	
 		if @biological_clock > 0 then @biological_clock -= 1 end
 		
-		# When each internal condition warrants a change of behavior, ask the brain what to do	
+		# When an internal condition warrants a change of behavior, ask the brain what to do	
 		if is_hungry? then ask_the_brain_what_to_do :search_for_food end		
 		if is_starving?	then ask_the_brain_what_to_do :ask_for_help end
 		if can_reproduce? then ask_the_brain_what_to_do :reproduce end	
@@ -230,10 +231,26 @@ class Critter < SimulationItem
 			end
 		else	
 			@all_foods = detected_food
-			# With one or more food items available, the critter must decide if it should engage one or indeed any of the food items in the list. 
-			# Distance to food, activation energy, the critter's current store of energy all together ultimately define the probability
-			# of the critter's success in engaging a particular food item and thus whether it chooses to pursue a particular food item.
+			# Ask the brain if any of the foods are suitable for consumption.
 			ask_the_brain_what_to_do :consume_food
+			# If the behavior is to still seach, then the food found is not suitable.
+			if @behavior == :search_for_food
+				# Start the search with a random path 
+				@elapsed_time_on_search_path += 1	
+				if @elapsed_time_on_search_path == 1	
+					@search_direction = rand(2 * Math::PI)
+					move_fuzzily_towards(@search_direction)
+				# Continue search on current path	
+				elsif @elapsed_time_on_search_path < @stubborness
+					move_fuzzily_towards(@search_direction)
+				# Search on a new path perpendicular to the current
+				else @elapsed_time_on_search_path >= @stubborness
+					coin_flip = rand(2)
+					if coin_flip == 0 then @search_direction += Math::PI/2.0 else @search_direction -= Math::PI/2.0 end
+					# reset the time spent on the new search path
+					@elapsed_time_on_search_path = 1	
+				end
+			end	
 		end
 	end
 	
@@ -241,6 +258,7 @@ class Critter < SimulationItem
 	# If the critter has satisfied the minimum amount of consumption to stave off hunger, how much more should it consume.  
 	# Should it consume to 100% energy and fat?	
 	def consume_food
+		
 		if @food.nil? 
 			ask_the_brain_what_to_do :search_for_food 
 			return	
@@ -425,16 +443,14 @@ class Critter < SimulationItem
 		@elapsed_time_on_search_path = 0	
 	end
 
-	def decide_which_food_to_consume
-		@food = @all_foods[0]
-	end
-
 #=================================================== IDLE DECISIONS =================================================
 
 	def idle_or_search
 		if is_hungry?
-			@behavior = :search_for_food 
-			reset_elapsed_time_on_search_path	
+			if @behavior == :idle 
+				@behavior = :search_for_food 
+				reset_elapsed_time_on_search_path	
+			end
 		else 
 			@behavior = :idle 
 		end
@@ -461,44 +477,78 @@ class Critter < SimulationItem
 	end
 
 #=================================================== SEARCH DECISIONS =================================================
-	
+
+	# Whether the critter searches or consumes depends on what's available to it.  If there are 0 food items within range then obviously it needs to search.
+	# If there is only 1 item within range, what it does depends on what type of food item it is.  If the food is easy, then the critter should try and eat it.
+	# If the only food item is hard, then the critter should try and consume it if it has an appetite for risk or search instead if the critter is more cautious.	
+	# When the critter is hungry it should always be closing in on its food leads. Glengarry Glen Ross leads are only for critters that close.  
 	def search_or_consume
-		# The reason a critter searches is to ultimately find food that it can consume. When the critter is hungry it should always be closing
-		# in on food.  Before making a decision update the leads.  Glengarry Glen Ross leads are for critters that close.  
-	
-		# Make sure critter is hungry
+		@all_foods = smell
 		if is_hungry?
-			@all_foods = smell		
-			if @all_foods.size > 0	
-				@food = @all_foods[0]
-				@behavior = :consume_food
-			else
-				@behavior = :search_for_food
-			end	
-#			if @all_foods.size == 1
-#				# If the food is easy, is there a lot of competition?
-#				if @all_foods[0].is_easy_to_eat?
-#					@behavior = :consume_food
-#					@food = @all_foods[0]
-#				# If the food is hard, the decision is a little more involved.  	
-#				else 
-#					# energy level, appetite_for_risk, amount of competition, stubborness
-#					if @appetite_for_risk > @cautiousness
-#						@behavior = :consume_food						
-#					elsif @appetite_for_risk < @cautiousness
-#						@behavior = :search_for_food
-#					else
-#						coin_toss = rand(2)
-#						if coin_toss.is_odd? then @behavior = :consume_food else @behavior = :search_for_food end
-#					end
-#				end	
-#			elsif @all_foods.size > 1
-#				decide_which_food_to_consume	
-#				@behavior = :consume_food 
-#			else 
-#				@paid_activation_energy = false	
-#				@behavior = :search_for_food 
-#			end 
+			if @all_foods.size == 1
+				# If the food is easy
+				if @all_foods[0].is_easy_to_eat?
+					@behavior = :consume_food
+					@food = @all_foods[0]
+				# If the food is hard
+				else 
+					# If the critter is more cautiousness than risk-seeking keep searching for easier food	
+					if @appetite_for_risk > @cautiousness
+						@behavior = :consume_food						
+					elsif @appetite_for_risk < @cautiousness
+						reset_elapsed_time_on_search_path unless @behavior == :search_for_food	
+						@behavior = :search_for_food
+					# If the critter is neutral, than flip a coin
+					else
+						coin_toss = rand(2)
+						if coin_toss.odd?	
+							@behavior = :consume_food	
+						else	
+							reset_elapsed_time_on_search_path unless @behavior == :search_for_food	
+							@behavior = :search_for_food 
+						end
+					end
+				end	
+			elsif @all_foods.size > 1
+				easy_food = @all_foods.select {|food| food.is_easy_to_eat? == true }
+				hard_food = @all_foods.select {|food| food.is_easy_to_eat? == false }
+				# Only hard foods
+				if easy_food.empty? 
+					if @appetite_for_risk > @cautiousness 
+						@behavior = :consume_food
+						@food = hard_food[0]
+				   	else 
+						# only reset the elapsed time on the path when switching from some other behavior to searching for food	
+						reset_elapsed_time_on_search_path unless @behavior == :search_for_food
+						@behavior = :search_for_food 
+					end
+				# Only easy foods	
+				elsif hard_food.empty?
+					@behavior = :consume_food
+					@food = easy_food[0]	
+				# Mixture of easy and hard foods
+				else
+					# Willing to risk the hard food	
+					if @appetite_for_risk > @cautiousness
+						@behavior = :consume_food
+						@food = hard_food[0]
+					elsif @appetite_for_risk < @cautiousness
+						@behavior = :consume_food 
+						@food = easy_food[0]
+					else
+						coin_toss = rand(2)
+						if coin_toss.odd? 
+							@behavior = :consume_food 
+						else 
+							reset_elapsed_time_on_search_path unless @behavior == :search_for_food	
+							@behavior = :search_for_food 
+						end
+					end
+				end	
+			else 
+				@paid_activation_energy = false	
+				@behavior = :search_for_food 
+			end 
 		else
 			ask_the_brain_what_to_do
 		end

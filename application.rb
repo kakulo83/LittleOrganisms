@@ -54,7 +54,7 @@ class Application
 		@background_layer.position = CGPointMake(SIMULATION_WIDTH/2, SIMULATION_HEIGHT/2)
 		@background_layer.bounds = CGRectMake(0,0,SIMULATION_WIDTH, SIMULATION_HEIGHT)
 
-	# Create View 
+		# Create View 
 		@gui = NSView.alloc.initWithFrame(@frame)
 		@gui.wantsLayer = true 
 		@gui.layer.insertSublayer(@background_layer, atIndex: 0)

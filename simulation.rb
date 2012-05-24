@@ -23,7 +23,7 @@ module Simulation
 	def start_simulation
 		$simulation_time = 0
 		init_environment()
-		init_simulation(1,10)	
+		init_simulation(1,8)	
 
 		# Start the all important simulation loop
 		@timer = NSTimer.scheduledTimerWithTimeInterval SimulationData::TIME_INCREMENT, 
@@ -47,16 +47,16 @@ module Simulation
 	def init_simulation(num_critter, num_food)
 		# These two food items are added right next to the 1st critter to ensure it survives the first few cycles.
 		# Life in this simulation is pretty rough as it is, it's the least we can do. 	
-		food0 = Food.new(645,730,35,35,5,1000.0)
+		food0 = Food.new(645,730,5,50.0)
 		food0.add_observer self	
 		add_food_item(food0)
 
-		food1 = Food.new(550,670,35,35,10,2000.0)	
+		food1 = Food.new(550,670,35,1000.0)	
 		food1.add_observer self	
 		add_food_item(food1)
 
 		num_food.times do
-			food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+			food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),rand(20),300.0)
 			food.add_observer self
 			add_food_item(food)
 		end
@@ -86,13 +86,13 @@ module Simulation
 		
 			if max_number_of_new_food < number_of_foods 
 				max_number_of_new_food.times do
-					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),rand(20),300.0)
 					food.add_observer self
 					add_food_item(food)
 				end
 			else
 				number_of_foods.times do
-					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),35,35,rand(20),300.0)
+					food = Food.new(rand(SIMULATION_WIDTH), rand(SIMULATION_HEIGHT),rand(20),300.0)
 					food.add_observer self
 					add_food_item(food)
 				end

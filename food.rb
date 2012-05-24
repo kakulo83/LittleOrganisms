@@ -21,13 +21,13 @@ class Food < SimulationItem
 
 	attr_reader :activation_energy, :nutritional_content
 
-	def initialize(x, y, width, height, activation_energy, nutritional_content)
+	def initialize(x, y, activation_energy, nutritional_content)
 		# Remember to call your parent and pay respect to your ancestors	
 		super
 		@x = x
 		@y = y
-		@width = width
-		@height = height
+		@width = 35 
+		@height = 35
 		@activation_energy = activation_energy					# Energy critters must expend to consume food
 		@nutritional_capacity = nutritional_content				# Total capacity of energy food item contains
 		@nutritional_content = nutritional_content				# Currrent amount of energy food contains
