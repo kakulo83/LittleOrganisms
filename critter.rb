@@ -55,6 +55,7 @@ class Critter < SimulationItem
 		@all_food = []							# All food item[s] critter has smelled (detected)
 		@food = nil								# Food item critter will attempt to consume
 		@paid_activation_energy = false			# Flag used in keeping track of state of activation energy payment.  No pay => we break your legs
+		@made_decision = false					# Flag used to track the state of decision from one cycle to another... i.e coin flip in 
 	end
 
 	# Evantually some of these values should be supplied by the simulator based on the statistics it has collected.  The simulator will try to tweak these traits
