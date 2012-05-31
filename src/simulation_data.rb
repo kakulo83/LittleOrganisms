@@ -13,19 +13,9 @@
 #	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 #	 IN THE SOFTWARE.
 
-#  This module contains common data used throughout the simulation.
 require 'json'
 
-module SimulationData
-
-	SIMULATION_WIDTH = 1024 
-	SIMULATION_HEIGHT = 1024 
-	GRID_RESOLUTION = 10
-	TIME_INCREMENT = 0.2
-	MAX_POPULATION = 100
-	CYCLES_PER_SEASON = 500
-	MAX_AVAILABLE_ENERGY = 60000.0		# The total amount of energy available to the system at any given time (akin to sunshine) 
-	INTERACTION_RANGE = 15.0			# The min distance two things have to be to interact w/each other
+module SimulationData 
 
 	def all_layers
 		@all_layers ||= []	
@@ -43,7 +33,7 @@ module SimulationData
 		# Add to all_layers	
 		new_layer = ImageLayer.alloc.initWithItem(item)
 		all_layers << new_layer
-		@background_layer.addSublayer(new_layer)	
+		@simulation_layer.addSublayer(new_layer)	
 		new_layer
 	end
 
@@ -53,7 +43,7 @@ module SimulationData
 		if layer_to_remove
 			layer_to_remove.removeFromSuperlayer if layer_to_remove.respond_to?(:removeFromSuperlayer)	
 			all_layers.delete(layer_to_remove)
-			@background_layer.refresh
+			@simulation_layer.refresh
 		end
 	end
 
@@ -77,12 +67,19 @@ module SimulationData
 		remove_subLayer(food)
 	end
 
-	def add_data_point(item,type,*additional)
+	def add_global_data(type, *additional)
+		case type
+		when :extinction
+			File.open('../data/aggregate.data',"a") { |f| f << "Extinction: " + item.traits.to_json + "\n" }
+		end
+	end
+
+	def add_local_data(item, type, *additional)
 		case item 
 		when Critter
 			case type
 			when :born
-				File.open('data/aggregate.data',"a") { |f| f << item.traits.to_json + "\n" }
+				File.open('../data/instance.data',"a") { |f| f << "Birth: " + item.traits.to_json + "\n" }
 			when :dead
 				#File.open('data/aggregate.data',"a") { |f| f << item.traits.to_json + "\n" }
 			when :consume_decision
@@ -115,5 +112,4 @@ module SimulationData
 	def calculate_standard_deviation(trait)
 		# calculate standard deviation for trait
 	end
-
 end

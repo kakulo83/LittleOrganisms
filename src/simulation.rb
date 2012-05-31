@@ -13,12 +13,21 @@
 #	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 #	 IN THE SOFTWARE.
 
+require 'simulation_constants'
 require 'simulation_data'
+require 'critter'
+require 'food'
 
-module Simulation
-	include SimulationData 
+class Simulation
+
+	include SimulationData
+	include SimulationConstants 
 
 	$simulation_time
+
+	def initialize(main_layer)
+		@simulation_layer = main_layer
+	end
 
 	def start_simulation
 		$simulation_time = 0
@@ -26,7 +35,19 @@ module Simulation
 		init_simulation(1,8)	
 
 		# Start the all important simulation loop
-		@timer = NSTimer.scheduledTimerWithTimeInterval SimulationData::TIME_INCREMENT, 
+		@timer = NSTimer.scheduledTimerWithTimeInterval TIME_INCREMENT, 
+			target: self, 
+			selector: 'refresh', 
+			userInfo: nil, 
+			repeats: true
+	end
+
+	def pause_simulation
+		@timer.invalidate
+	end
+
+	def continue_simulation
+		@timer = NSTimer.scheduledTimerWithTimeInterval TIME_INCREMENT, 
 			target: self, 
 			selector: 'refresh', 
 			userInfo: nil, 
@@ -35,6 +56,11 @@ module Simulation
 
 	def restart_simulation
 		# Add code so simulation can be restarted whilst running
+	end
+
+	def end_simulation
+		#add_global_data which includes the total run time of the simulation 
+		exit	
 	end
 
 	def init_environment()
@@ -116,11 +142,13 @@ module Simulation
 			case type
 			when :dead
 				remove_critter item 
+				add_local_data item, type
+				if all_critters.empty? then pause_simulation end
 			when :born
 				if all_critters.size < MAX_POPULATION 
 					item.add_observer self	
 					add_critter item 
-					add_data_point item, type
+					add_local_data item, type
 				end
 			when :ask_for_help
 			

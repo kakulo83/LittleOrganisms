@@ -26,7 +26,7 @@ class Critter < SimulationItem
 		super
 		@x = x
 		@y = y
-		@image_name = "graphics/critter.png"
+		@image_name = "../graphics/critter.png"
 		@simulation = simulation				# Sim reference needed for all_foods references when detecting food 
 		initialize_internal_variables
 
@@ -86,8 +86,9 @@ class Critter < SimulationItem
 #		@traits[:charity] = 0
 #       @traits{:greediness] = 0				# Used in food interaction behavior.  Greedy critters will eat more than they need etc.
 		@traits[:reproduction_minimum] = 400	# Minimum energy needed to reproduce.
-		@traits[:reproduction_cost] = 300
+		@traits[:reproduction_cost] = 200
 		@traits[:lifespan] = 800				# Maximum lifespan of heatlhy critters	
+		
 		express_traits
 	end
 

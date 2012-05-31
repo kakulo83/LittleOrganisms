@@ -19,6 +19,7 @@ require 'food'
 require 'simulation'
 require 'simulation_data'
 require 'image_layer'
+require 'graph_drawer'
 
 class Application 
 
@@ -38,26 +39,33 @@ class Application
 		@sim.activateIgnoringOtherApps(true)	
 		@sim.delegate = self
 
-		# Create Window
+		# Create Main Application Window
 		@frame  = [0.0, 0.0, SIMULATION_WIDTH, SIMULATION_HEIGHT]	
 		@window = NSWindow.alloc.initWithContentRect(frame,	
 					styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask, 
 					backing:NSBackingStoreBuffered, 
 					defer:false)
-		@window.delegate = self
 		@window.title = "Unintelligent Design"
 		@window.contentView.wantsLayer = true
 
-		# Create Background Layer
+		# Create Simulation Background Layer
 		@background_layer = ImageLayer.alloc.initWithImageNamed("graphics/background.jpeg")		
 		@background_layer.masksToBounds = true
 		@background_layer.position = CGPointMake(SIMULATION_WIDTH/2, SIMULATION_HEIGHT/2)
 		@background_layer.bounds = CGRectMake(0,0,SIMULATION_WIDTH, SIMULATION_HEIGHT)
 
-		# Create View 
+		# Create Main Simulation View 
 		@gui = NSView.alloc.initWithFrame(@frame)
 		@gui.wantsLayer = true 
 		@gui.layer.insertSublayer(@background_layer, atIndex: 0)
+
+		# Create Side-Drawer for graph interface
+		@graph_drawer = GraphDrawer.alloc.initWithContentSize(NSMakeSize(0,200),
+					 preferredEdge:NSMaxXEdge) 
+		@graph_drawer.setParentWindow(@window)
+		@graph_drawer.setMaxContentSize(NSMakeSize(300,300))
+		@graph_drawer.open
+		@graph_drawer.setNextResponder(@graph_drawer)
 
 		# Connect Objects
 		@window.contentView.addSubview(@gui)
