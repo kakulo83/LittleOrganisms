@@ -16,13 +16,11 @@
 #  This module contains data and methods used throughout the simulation.
 
 module SimulationConstants
-
 	SIMULATION_WIDTH = 1024 
 	SIMULATION_HEIGHT = 1024 
-	TIME_INCREMENT = 0.2				# Time quantized?
+	TIME_INCREMENT = 0.2				# Time between simulation updates (used in main simulation loop)
 	MAX_POPULATION = 100				
-	CYCLES_PER_SEASON = 500				# No leap years here
+	CYCLES_PER_SEASON = 500				 
 	MAX_AVAILABLE_ENERGY = 60000.0		# The total amount of energy in the system available for the expressions of life
 	INTERACTION_RANGE = 15.0			# The min distance two things have to be to interact w/each other
-
 end

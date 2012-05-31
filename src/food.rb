@@ -31,16 +31,16 @@ class Food < SimulationItem
 		@activation_energy = activation_energy					# Energy critters must expend to consume food
 		@nutritional_capacity = nutritional_content				# Total capacity of energy food item contains
 		@nutritional_content = nutritional_content				# Currrent amount of energy food contains
-		@expiration_date = 300 + rand(200)							# Food shelf-life 
+		@expiration_date = 300 + rand(200)						# Food shelf-life 
 		@age = 0	
 		@rate_of_rotting = 40
 
 		if activation_energy <= 10 
 			@easy_to_eat = true							 
-			@image_name = "../graphics/easy_food.png"	
+			@image_name = "../images/easy_food.png"	
 		else 
 			@easy_to_eat = false 
-			@image_name = "../graphics/hard_food.png"
+			@image_name = "../images/hard_food.png"
 		end
 	end
 

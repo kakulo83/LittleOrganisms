@@ -14,52 +14,15 @@
 #	 IN THE SOFTWARE.
 
 framework 'Cocoa'
-require 'simulation_constants'
-require 'simulation'
-require 'image_layer'
+require '../src/image_layer'
 
-class AppWrapper
-	
-	include SimulationConstants
+class SimulationWindow < NSWindow
 
-	def applicationDidFinishLaunching(notification)
-		# Create Simulation Object	
-		@sim = Simulation.new(@simulation_layer)	
-	
-		# Finish binding button/window events to simulation event handlers
-		@start_stop_btn.setAction('start_stop_btn_handler:')
-		@start_stop_btn.setTarget(@sim)
+	attr_accessor :simulation_view
 
-		@history_data_btn.setAction('history_data_btn_handler:')
-		@history_data_btn.setTarget(@sim)
-
-		@instance_data_btn.setAction('instance_data_btn_handler:')
-		@instance_data_btn.setTarget(@sim)	
-
-		@window.setNextResponder(@sim)
-		
-		# Start simulation
-		@sim.start_simulation	
-	end
-
-	def windowWillClose(notification)
-		p "Exiting Simulation"
-	end
-
-	def acceptsFirstResponder
-		true
-	end
-
-	def initialize
-		
-		# Create NSApplication instance
-		@app = NSApplication.sharedApplication
-		@app.activationPolicy = NSApplicationActivationPolicyRegular
-		@app.activateIgnoringOtherApps(true)	
-		@app.delegate = self
-	
-		# Create Main Application Window
-		@frame  = [0, 0, SIMULATION_WIDTH, SIMULATION_HEIGHT]	
+	def initWithFrame(frame)
+		# Call parent initWithFrame	
+		super
 		@window = NSWindow.alloc.initWithContentRect(@frame,	
 					styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask|NSTexturedBackgroundWindowMask, 
 					backing:NSBackingStoreBuffered, 
@@ -67,7 +30,6 @@ class AppWrapper
 		@window.title = "Unintelligent Design"
 		@window.contentView.wantsLayer = true
 
-		# Create Simulation Background Layer
 		@simulation_layer = ImageLayer.alloc.initWithImageNamed("../images/background.jpeg")		
 		@simulation_layer.masksToBounds = true
 		@simulation_layer.position = CGPointMake(SIMULATION_WIDTH/2, SIMULATION_HEIGHT/2)
@@ -117,12 +79,9 @@ class AppWrapper
 		@window.display
 		@window.makeKeyAndOrderFront(nil)
 		@window.orderFrontRegardless
+
+		# Don't forget to return self as required by Cocoa-API
+		self
 	end
 
-	def run
-		@app.run
-	end
 end
-
-app = AppWrapper.new
-app.run 

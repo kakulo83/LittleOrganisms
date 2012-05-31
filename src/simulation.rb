@@ -23,8 +23,6 @@ class Simulation
 	include SimulationData
 	include SimulationConstants 
 
-	$simulation_time
-
 	def initialize(main_layer)
 		@simulation_layer = main_layer
 	end
@@ -33,8 +31,6 @@ class Simulation
 		$simulation_time = 0
 		init_environment()
 		init_simulation(1,8)	
-
-		# Start the all important simulation loop
 		@timer = NSTimer.scheduledTimerWithTimeInterval TIME_INCREMENT, 
 			target: self, 
 			selector: 'refresh', 
@@ -166,4 +162,51 @@ class Simulation
 			end
 		end	
 	end
+
+	def mouseUp(event)
+		p event.locationInWindow.x.to_s + " " + event.locationInWindow.y.to_s
+		p "Showing all information about critter"
+		# Check if a window is already open, create if non, update data if window is open
+
+		@frame = [0, 0, SIMULATION_WIDTH/4, SIMULATION_HEIGHT/4]		
+		@sim_item_data_window = NSWindow.alloc.initWithContentRect(@frame,
+				styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask|NSTexturedBackgroundWindowMask,
+				backing:NSBackingStoreBuffered,
+				defer:false)
+		@sim_item_data_window.title = "" 
+
+		# Check if click is on a simulation item
+	end
+
+	def mouseDown(event)
+	end
+
+	def mouseDragged(event)
+	end
+
+	def flagsChanged(event)
+		# Raised when keys like "control" "shift" are pressed
+	end
+
+	def keyUp(event)
+	end
+
+	def keyDown(event)
+	end
+
+	def scrollWheel(event)
+	end
+
+	def start_stop_btn_handler(sender)
+		p "toggling simulation"	
+	end
+
+	def history_data_btn_handler(sender)
+		p "Showing simulation history data"		
+	end
+
+	def instance_data_btn_handler(sender)
+		p "Showing instance data"
+	end
+
 end

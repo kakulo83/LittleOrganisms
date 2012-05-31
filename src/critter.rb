@@ -26,7 +26,7 @@ class Critter < SimulationItem
 		super
 		@x = x
 		@y = y
-		@image_name = "../graphics/critter.png"
+		@image_name = "../images/critter.png"
 		@simulation = simulation				# Sim reference needed for all_foods references when detecting food 
 		initialize_internal_variables
 
