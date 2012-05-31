@@ -15,14 +15,18 @@
 
 framework 'Cocoa'
 require '../src/image_layer'
+require '../src/simulation_constants'
 
 class SimulationWindow < NSWindow
 
-	attr_accessor :simulation_view
+	include SimulationConstants
 
-	def initWithFrame(frame)
+	attr_accessor :simulation_layer
+
+	def initWithFrame(frame,sim)
 		# Call parent initWithFrame	
 		super
+		
 		@window = NSWindow.alloc.initWithContentRect(@frame,	
 					styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask|NSTexturedBackgroundWindowMask, 
 					backing:NSBackingStoreBuffered, 

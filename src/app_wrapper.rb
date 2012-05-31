@@ -46,10 +46,6 @@ class AppWrapper
 		p "Exiting Simulation"
 	end
 
-	def acceptsFirstResponder
-		true
-	end
-
 	def initialize
 		
 		# Create NSApplication instance
