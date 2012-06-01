@@ -13,6 +13,7 @@
 #	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 #	 IN THE SOFTWARE.
 
+require 'image_layer'
 require 'json'
 
 module SimulationData 
@@ -79,7 +80,7 @@ module SimulationData
 		when Critter
 			case type
 			when :born
-				File.open('../data/instance.data',"a") { |f| f << "Birth: " + item.traits.to_json + "\n" }
+				File.open(File.join($ROOT,'data/instance.data'),"a") { |f| f << "Birth: " + item.traits.to_json + "\n" }
 			when :dead
 				#File.open('data/aggregate.data',"a") { |f| f << item.traits.to_json + "\n" }
 			when :consume_decision

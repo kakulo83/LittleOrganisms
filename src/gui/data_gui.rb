@@ -15,48 +15,10 @@
 
 framework 'Cocoa'
 
-$ROOT = File.dirname(File.expand_path(File.dirname(__FILE__)))
-$SOURCE = File.expand_path(File.dirname(__FILE__))
+class DataGui
 
-require File.join($SOURCE, 'gui/simulation_gui')
-require 'simulation_constants'
-require 'simulation'
-require 'image_layer'
+	def initialize(sim)
 
-class AppWrapper
-	
-	include SimulationConstants
-
-	def initialize
-		# Create NSApplication instance
-		@app = NSApplication.sharedApplication
-		@app.activationPolicy = NSApplicationActivationPolicyRegular
-		@app.activateIgnoringOtherApps(true)	
-		@app.delegate = self
-		
-		# Create Simulation Object	
-		@sim = Simulation.new
-
-		# Create Main Application Window
-		@window = SimulationGUI.new(@sim)
-
-		# Give the simulation object a copy of the main layer in the simulation used for drawing etc.
-		@sim.simulation_layer = @window.simulation_layer 
 	end
 
-	def applicationDidFinishLaunching(notification)
-		# Start simulation
-		@sim.start_simulation	
-	end
-
-	def windowWillClose(notification)
-		p "The End of Days Have Come Upon Us"
-	end
-
-	def run
-		@app.run
-	end
 end
-
-app = AppWrapper.new
-app.run 

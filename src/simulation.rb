@@ -23,9 +23,7 @@ class Simulation
 	include SimulationData
 	include SimulationConstants 
 
-	def initialize(main_layer)
-		@simulation_layer = main_layer
-	end
+	attr_accessor :simulation_layer
 
 	def start_simulation
 		$simulation_time = 0
