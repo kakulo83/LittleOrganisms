@@ -12,47 +12,32 @@
 #	 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER 
 #	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 #	 IN THE SOFTWARE.
-
 framework 'Cocoa'
 
-# Add life-simulation root dir to the path of the MacRuby interpreter for easier file referencing etc.
-$LOAD_PATH.unshift(File.dirname(File.expand_path(File.dirname(__FILE__))))
+class Graph < NSView
 
-require 'src/gui/simulation_gui'
-require 'src/gui/image_layer'
-require 'simulation_constants'
-require 'simulation'
-
-class AppWrapper
-	
-	include SimulationConstants
-
-	def initialize
-		# Create NSApplication instance
-		@app = NSApplication.sharedApplication
-		@app.activationPolicy = NSApplicationActivationPolicyRegular
-		@app.activateIgnoringOtherApps(true)	
-		@app.delegate = self
-		
-		# Create Simulation Object	
-		@sim = Simulation.new
-
-		# Create Main Application Window
-		@window = SimulationGUI.new(@sim)
-
-		# Give the simulation object a copy of the main layer in the simulation used for drawing etc.
-		@sim.simulation_layer = @window.simulation_layer 
+	def initWithFrame(frame, *data)
+		super
+		@image = NSImage.alloc.initWithContentsOfFile("images/click_to_add_graph.png")
+		self
 	end
 
-	def applicationDidFinishLaunching(notification)
-		# Start simulation
-		@sim.start_simulation	
+	def temp_context(&block)
+		context = NSGraphicsContext.currentContext
+		context.saveGraphicsState
+		yield
+		context.restoreGraphicsState
 	end
 
-	def run
-		@app.run
+	def refresh
+		self.setNeedsDisplay(true)
+	end
+
+	def drawRect(rect)
+		@image.drawAtPoint([0,0], fromRect: NSZeroRect, operation: NSCompositeSourceOver, fraction: 1)
+	end
+
+	def set_data
+		p "Setting data"
 	end
 end
-
-app = AppWrapper.new
-app.run 

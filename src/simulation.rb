@@ -13,6 +13,12 @@
 #	 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS 
 #	 IN THE SOFTWARE.
 
+
+# Simulation contains the main loop that invokes the update method for all simulation items.  The Simulation Object also
+# updates the environmen (food), responds to critter/food issued events, and also the mouse/button clicks that open up
+# the data windows 
+
+require 'src/gui/data_gui'
 require 'simulation_constants'
 require 'simulation_data'
 require 'critter'
@@ -26,12 +32,17 @@ class Simulation
 	attr_accessor :simulation_layer
 
 	def start_simulation
+		# Init simulation time to zero
 		$simulation_time = 0
+		# Setup the relationship between new food and the simulation time 
 		init_environment()
+		# Add the initial food and critters to the simulation
 		init_simulation(1,8)	
+		# Create the object that will manage the data windows
+		@data_gui = DataGUI.new(self)
 		@timer = NSTimer.scheduledTimerWithTimeInterval TIME_INCREMENT, 
 			target: self, 
-			selector: 'refresh', 
+			selector: 'global_update', 
 			userInfo: nil, 
 			repeats: true
 	end
@@ -43,7 +54,7 @@ class Simulation
 	def continue_simulation
 		@timer = NSTimer.scheduledTimerWithTimeInterval TIME_INCREMENT, 
 			target: self, 
-			selector: 'refresh', 
+			selector: 'global_update', 
 			userInfo: nil, 
 			repeats: true
 	end
@@ -58,8 +69,9 @@ class Simulation
 	end
 
 	def init_environment()
-		@seasonal_multiplier = []	# Used to wax/wane the TOTAL_AVAILABLE_ENERGY energy throughout time; just like variable sun-light output
+		@seasonal_multiplier = []	# Used to wax/wane the TOTAL_AVAILABLE_ENERGY energy throughout time; just like variable sun-light
 		CYCLES_PER_SEASON.times do |time|
+			# What is this equation?   I just made this crap up		
 			@seasonal_multiplier[time] = (0.25 + (0.75/2) + (0.75/2) * Math.cos(2*Math::PI*time/CYCLES_PER_SEASON.to_f)).round(2)
 		end
 	end
@@ -88,11 +100,15 @@ class Simulation
 		end
 	end
 
-	def refresh 
-		if $simulation_time <= CYCLES_PER_SEASON-1 then $simulation_time += 1 else $simulation_time = 0 end	
+	def global_update 
+		update_time	
 		update_environment
 		all_layers.each { |layer| layer.update }
+		update_data_windows
+	end
 
+	def update_time
+		if $simulation_time <= CYCLES_PER_SEASON-1 then $simulation_time += 1 else $simulation_time = 0 end	
 	end
 
 	def update_environment
@@ -129,7 +145,12 @@ class Simulation
 		end
 	end
 
-	# Listener for Critter and Food issued events
+	def update_data_windows
+		#  Add code to update any windows
+	end
+
+	# Listener for Critter and Food issued events, observer pattern added in critter/food requires listener handler method
+	# to be called 'update' 
 	def update(item, type, *additional)
 		case item
 		when Critter
@@ -162,18 +183,20 @@ class Simulation
 	end
 
 	def mouseUp(event)
-		p event.locationInWindow.x.to_s + " " + event.locationInWindow.y.to_s
-		p "Showing all information about critter"
-		# Check if a window is already open, create if non, update data if window is open
+		# Check if click is on or closet enough to a critter 
 
-		@frame = [0, 0, SIMULATION_WIDTH/4, SIMULATION_HEIGHT/4]		
-		@sim_item_data_window = NSWindow.alloc.initWithContentRect(@frame,
-				styleMask:NSTitledWindowMask|NSClosableWindowMask|NSMiniaturizableWindowMask|NSTexturedBackgroundWindowMask,
-				backing:NSBackingStoreBuffered,
-				defer:false)
-		@sim_item_data_window.title = "" 
+		#p event.locationInWindow.x.to_s + " " + event.locationInWindow.y.to_s
+		all_critters.each do |critter|
+			# if click distance is less than closest critter
+			#    then this critter is the new closest critter 
+			# else
+			# 	 continue searching
+			#
+			# issue a request to DataGUI for a new_simulation_item_data_window (DataGUI will then make a new data window if one for this critter does not already exist
+		end
 
-		# Check if click is on a simulation item
+		@data_gui = DataGUI.new(self)
+		@data_gui.new_simulation_item_data_window
 	end
 
 	def mouseDown(event)
@@ -206,5 +229,4 @@ class Simulation
 	def instance_data_btn_handler(sender)
 		p "Showing instance data"
 	end
-
 end

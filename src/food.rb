@@ -37,10 +37,10 @@ class Food < SimulationItem
 
 		if activation_energy <= 10 
 			@easy_to_eat = true							 
-			@image_name = File.join($ROOT,'images/easy_food.png')
+			@image_name = 'images/easy_food.png'
 		else 
 			@easy_to_eat = false 
-			@image_name = File.join($ROOT,'images/hard_food.png')
+			@image_name = 'images/hard_food.png'
 		end
 	end
 

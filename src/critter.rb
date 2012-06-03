@@ -26,7 +26,7 @@ class Critter < SimulationItem
 		super
 		@x = x
 		@y = y
-		@image_name = File.join($ROOT,'images/critter.png')
+		@image_name = 'images/critter.png'
 		@simulation = simulation				# Sim reference needed for all_foods references when detecting food 
 		initialize_internal_variables
 
@@ -383,7 +383,7 @@ class Critter < SimulationItem
 	# Interception angle in radians
 	#	  y
 	#	  ^	    _____
-	#	  |    (_____:)   (critter is oriented to the right with angle = 0 radians
+	#	  |    (_____:)   (Orientation of critter when angle = 0 radians
 	#	  |
 	#	  |
 	#	 (0,0) ----> x

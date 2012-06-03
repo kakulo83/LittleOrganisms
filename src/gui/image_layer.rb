@@ -14,7 +14,6 @@
 #	 IN THE SOFTWARE.
 
 framework 'QuartzCore'
-framework 'Cocoa'
 
 class ImageLayer < CALayer
 	attr_reader :item
