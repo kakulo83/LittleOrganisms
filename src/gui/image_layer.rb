@@ -22,6 +22,8 @@ class ImageLayer < CALayer
 	def initWithImageNamed(file_name)
 		init
 		backgroundColor = CGColorCreateGenericRGB(0,10,0,1)
+		# The anchorPoint defines the anchor point of the layer's bounds rectangle
+		# (0.5,0.5) => the center of the rectangle	
 		anchorPoint = CGPointMake(0.5,0.5)	
 		@image_name = file_name
 		refresh	
@@ -64,7 +66,6 @@ class ImageLayer < CALayer
 		#CGAffineTransform transform = CGAffineTransformConcat(CGAffineTransformMakeRotation(angle), CGAffineTransformMakeScale(item.scale, item.scale))
 		#setAffineTransform(transform)
 		context = NSGraphicsContext.currentContext		
-			
 	end
 
 	def refresh

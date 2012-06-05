@@ -40,7 +40,7 @@ module SimulationData
 		# Add to all_layers	
 		new_layer = ImageLayer.alloc.initWithItem(item)
 		all_layers << new_layer
-		@simulation_layer.addSublayer(new_layer)	
+		@simulation_background_layer.addSublayer(new_layer)	
 		new_layer
 	end
 
@@ -50,7 +50,7 @@ module SimulationData
 		if layer_to_remove
 			layer_to_remove.removeFromSuperlayer if layer_to_remove.respond_to?(:removeFromSuperlayer)	
 			all_layers.delete(layer_to_remove)
-			@simulation_layer.refresh
+			@simulation_background_layer.refresh
 		end
 	end
 

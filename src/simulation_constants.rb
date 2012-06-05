@@ -16,8 +16,10 @@
 #  This module contains data and methods used throughout the simulation.
 
 module SimulationConstants
-	SIMULATION_WIDTH = 1024 
+	SIMULATION_WIDTH = 1024 			# Width of Main Simulation Window
 	SIMULATION_HEIGHT = 1024 
+	DATA_WIDTH = 341					# Default width for new data windows
+	DATA_HEIGHT = 341					
 	TIME_INCREMENT = 0.2				# Time between simulation updates (used in main simulation loop)
 	MAX_POPULATION = 100				
 	CYCLES_PER_SEASON = 500				 

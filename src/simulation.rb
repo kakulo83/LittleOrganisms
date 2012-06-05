@@ -29,7 +29,7 @@ class Simulation
 	include SimulationData
 	include SimulationConstants 
 
-	attr_accessor :simulation_layer
+	attr_accessor :simulation_background_layer
 
 	def start_simulation
 		# Init simulation time to zero
@@ -183,20 +183,29 @@ class Simulation
 	end
 
 	def mouseUp(event)
-		# Check if click is on or closet enough to a critter 
+		click_x = event.locationInWindow.x
+		click_y = event.locationInWindow.y	
+		selected_critter = nil 	
+		clicked_critter = false
+		min_distance = 15 
 
-		#p event.locationInWindow.x.to_s + " " + event.locationInWindow.y.to_s
 		all_critters.each do |critter|
-			# if click distance is less than closest critter
-			#    then this critter is the new closest critter 
-			# else
-			# 	 continue searching
-			#
-			# issue a request to DataGUI for a new_simulation_item_data_window (DataGUI will then make a new data window if one for this critter does not already exist
+			# Check if click is on or closet enough to a critter 
+			# A critter's (x,y) coordinate is at the center of the critter layer rectangle	
+			pythagorean_distance = Math.sqrt((critter.x - click_x)**2 + (critter.y - click_y)**2)   # arg**2  raises arg to exponent 2
+			
+			if pythagorean_distance < min_distance
+				clicked_critter = true	
+				min_distance = pythagorean_distance
+				selected_critter = critter	
+			end
 		end
-
-		@data_gui = DataGUI.new(self)
-		@data_gui.new_simulation_item_data_window
+		# Request a new window from DataGUI
+		if clicked_critter 
+			# If there is no data_gui object create one	
+			if @data_gui.nil? then @data_gui = DataGUI.new(self) end
+			@data_gui.new_item_data_window_for selected_critter
+		end
 	end
 
 	def mouseDown(event)
@@ -221,6 +230,10 @@ class Simulation
 	def start_stop_btn_handler(sender)
 		p "toggling simulation"	
 	end
+
+	def restart_btn_handler(sender)
+
+	end	
 
 	def history_data_btn_handler(sender)
 		p "Showing simulation history data"		

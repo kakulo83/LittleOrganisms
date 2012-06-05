@@ -41,7 +41,7 @@ class AppWrapper
 		@window = SimulationGUI.new(@sim)
 
 		# Give the simulation object a copy of the main layer in the simulation used for drawing etc.
-		@sim.simulation_layer = @window.simulation_layer 
+		@sim.simulation_background_layer = @window.simulation_background_layer
 	end
 
 	def applicationDidFinishLaunching(notification)
